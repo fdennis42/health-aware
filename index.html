@@ -12,7 +12,10 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
 <title>Health Aware</title>
+<script src="config.js"></script>
 <style>
 :root{
   color-scheme: light;
@@ -94,7 +97,7 @@ h3{font-size:15px;margin:0}
 .flabel{font-size:14px;font-weight:600;margin:0 0 8px;color:var(--ink)}
 .req{font-weight:400;color:var(--muted);font-size:12px}
 .hint{font-size:13px;color:var(--muted);margin-top:6px}
-input[type=text],input[type=number],input[type=email],input[type=date],input[type=datetime-local],textarea,select{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;min-height:44px}
+input[type=text],input[type=number],input[type=email],input[type=password],input[type=date],input[type=datetime-local],textarea,select{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;min-height:44px}
 input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
 textarea{min-height:72px;resize:vertical}
 .nums{display:flex;gap:8px}
@@ -167,6 +170,19 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .install code{background:var(--chip);border-radius:6px;padding:1px 5px;font-size:13px;word-break:break-all}
 .install .note{background:var(--chip);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:13px}
 
+.auth{max-width:420px;margin:0 auto;padding:calc(7vh + env(safe-area-inset-top)) 16px 40px;text-align:center}
+.authlogo{width:76px;height:76px;border-radius:20px;box-shadow:0 6px 20px rgba(42,120,214,.25)}
+.auth h1{margin:14px 0 4px}
+.auth form{text-align:left;margin-top:18px}
+.auth label{display:block;font-size:14px;font-weight:600;margin:12px 0 6px}
+.auth .msg{font-size:14px;margin-top:12px;border-radius:10px;padding:10px 12px}
+.auth .msg.err{background:rgba(208,59,59,.10);color:var(--crit-ink)}
+.auth .msg.ok{background:rgba(12,163,12,.10);color:var(--good-ink)}
+.auth .alt{margin-top:14px;text-align:center}
+.syncpill{border:0;font-size:12px;padding:5px 10px;border-radius:999px;background:var(--card);outline:1px solid var(--ring);color:var(--ink2);display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.syncpill .dot{width:8px;height:8px}
+.acct{display:flex;align-items:center;gap:12px}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
 #print-root{display:none}
 @media print{
   body{padding:0;background:#fff}
@@ -207,10 +223,19 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 </head>
 <body>
 
+<!-- SIGN IN -->
+<main id="view-auth" class="auth hidden">
+  <img src="icon-192.png" class="authlogo" alt="">
+  <h1>Health Aware</h1>
+  <div class="sub" id="auth-sub"></div>
+  <div id="auth-body"></div>
+</main>
+
 <!-- LOG -->
-<main id="view-log" class="wrap">
+<main id="view-log" class="wrap hidden">
   <div class="top">
     <div><div class="sub" id="today-date"></div><h1>Log</h1></div>
+    <button class="syncpill" id="sync-pill" aria-label="Sync status"></button>
   </div>
   <div class="tiles" id="tiles"></div>
   <div class="section-title">Today</div>
@@ -251,6 +276,21 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 <main id="view-settings" class="wrap hidden settings">
   <div class="top"><h1>Settings</h1></div>
   <div class="card">
+    <div class="acct"><div class="avatar" id="acct-avatar"></div><div style="min-width:0"><b>Signed in</b><div class="sub" id="acct-email" style="word-break:break-all"></div></div></div>
+    <div class="muted" id="sync-status" style="margin:10px 0"></div>
+    <div class="btnrow">
+      <button class="btn" id="btn-sync">Sync now</button>
+      <button class="btn" id="btn-chpw">Change password</button>
+      <button class="btn danger" id="btn-signout">Sign out</button>
+    </div>
+    <form id="chpw-form" class="hidden" style="margin-top:10px">
+      <input type="text" autocomplete="username" id="chpw-user" class="hidden" readonly>
+      <label for="chpw-1">New password (at least 10 characters)</label><input type="password" id="chpw-1" autocomplete="new-password" minlength="10" required>
+      <label for="chpw-2">Confirm new password</label><input type="password" id="chpw-2" autocomplete="new-password" minlength="10" required>
+      <button class="btn primary block" style="margin-top:10px">Save new password</button>
+    </form>
+  </div>
+  <div class="card">
     <h2>For your reports</h2>
     <label for="s-name">Your name</label><input type="text" id="s-name" autocomplete="name">
     <label for="s-dob">Date of birth</label><input type="date" id="s-dob">
@@ -280,7 +320,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
       <button class="btn" id="btn-restore">Restore backup</button>
     </div>
     <input type="file" id="restore-file" accept="application/json,.json" class="hidden">
-    <div class="muted" style="margin-top:10px">Your data stays on this iPhone only. Save a backup to Files or iCloud Drive regularly.</div>
+    <div class="muted" style="margin-top:10px">Your entries are saved on this device and synced to your private account. A backup file is an extra copy you control.</div>
   </div>
   <div class="card">
     <h2>Data</h2>
@@ -291,7 +331,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
   <div class="muted" style="text-align:center;margin:18px 0">Health Aware · for personal tracking, not medical advice.</div>
 </main>
 
-<nav class="tabbar" id="tabbar">
+<nav class="tabbar hidden" id="tabbar">
   <button data-v="log" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Log</button>
   <button data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>History</button>
   <button data-v="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 3 8-8"/><path d="M15 7h5v5"/></svg>Trends</button>
@@ -333,13 +373,134 @@ function ago(ts){
 }
 
 /* ---------- storage ---------- */
-const LS_E = 'ha.entries.v1', LS_S = 'ha.settings.v1';
+// Each signed-in user has one JSON file in cloud storage (<bucket>/<user id>/data.json),
+// readable only by that user. A copy is cached on the device so the app works offline.
 function load(k, def){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch { return def; } }
-let entries = load(LS_E, []);
-let settings = Object.assign({name:'', dob:'', provider:'', providerEmail:'', weightUnit:'lb', weightGoal:'maintain', meds:[], lastBackup:null}, load(LS_S, {}));
-function saveEntries(){ try { localStorage.setItem(LS_E, JSON.stringify(entries)); } catch (e) { alert('Could not save data: ' + e.message); } }
-function saveSettings(){ try { localStorage.setItem(LS_S, JSON.stringify(settings)); } catch (e) { alert('Could not save settings: ' + e.message); } }
+const CFG = window.HA_CONFIG || {};
+const LEGACY_E = 'ha.entries.v1', LEGACY_S = 'ha.settings.v1';
+const DEFAULT_SETTINGS = {name:'', dob:'', provider:'', providerEmail:'', weightUnit:'lb', weightGoal:'maintain', meds:[], lastBackup:null};
+let session = load('ha.session', null);
+let entries = [], settings = {...DEFAULT_SETTINGS}, deleted = {}, knownIds = new Set();
+const sync = {dirty:false, last:null, busy:false, again:false, error:''};
+const userKey = () => 'ha.u.' + session.user.id;
 const sortEntries = () => entries.sort((a, b) => b.ts.localeCompare(a.ts));
+function loadUserData(){
+  const d = load(userKey(), null) || {};
+  entries = d.entries || []; settings = Object.assign({...DEFAULT_SETTINGS}, d.settings || {}); deleted = d.deleted || {};
+  sync.dirty = !!d.dirty; sync.last = d.lastSync || null; sync.error = '';
+  knownIds = new Set(entries.map(e => e.id)); sortEntries();
+}
+function persist(){
+  try { localStorage.setItem(userKey(), JSON.stringify({entries, settings, deleted, dirty:sync.dirty, lastSync:sync.last})); }
+  catch (e) { alert('Could not save data on this device: ' + e.message); }
+}
+function saveEntries(){
+  // Record deletions as tombstones so they carry over to the user's other devices.
+  const now = new Date().toISOString(), ids = new Set(entries.map(e => e.id));
+  for (const id of knownIds) if (!ids.has(id)) deleted[id] = now;
+  for (const e of entries) if (deleted[e.id]){ delete deleted[e.id]; e.updated = now; }
+  knownIds = ids; changed();
+}
+function saveSettings(){ settings._updated = new Date().toISOString(); changed(); }
+function changed(){ sync.dirty = true; persist(); scheduleSync(); }
+
+/* ---------- auth (Supabase Auth REST API) ---------- */
+const api = p => String(CFG.supabaseUrl || '').replace(/\/$/, '') + p;
+async function authReq(path, body, method = 'POST', token){
+  const r = await fetch(api('/auth/v1' + path), {method, headers:{apikey:CFG.supabaseAnonKey, 'Content-Type':'application/json', ...(token ? {Authorization:'Bearer ' + token} : {})}, body:body ? JSON.stringify(body) : undefined});
+  const txt = await r.text(); let j = {}; try { j = txt ? JSON.parse(txt) : {}; } catch {}
+  if (!r.ok){ const err = new Error(j.error_description || j.msg || j.message || j.error || ('Request failed (' + r.status + ')')); err.status = r.status; throw err; }
+  return j;
+}
+function setSession(t, user){
+  session = {access_token:t.access_token, refresh_token:t.refresh_token, expires_at:Number(t.expires_at) || Math.floor(Date.now() / 1000) + Number(t.expires_in || 3600), user:{id:user.id, email:user.email}};
+  try { localStorage.setItem('ha.session', JSON.stringify(session)); } catch {}
+}
+let refreshing = null;
+async function freshToken(){
+  if (session.expires_at - 60 > Date.now() / 1000) return session.access_token;
+  if (!refreshing) refreshing = authReq('/token?grant_type=refresh_token', {refresh_token:session.refresh_token})
+    .then(j => { setSession(j, j.user || session.user); })
+    .catch(e => { if (e.status >= 400 && e.status < 500) sessionExpired(); throw e; })
+    .finally(() => { refreshing = null; });
+  await refreshing;
+  return session.access_token;
+}
+function sessionExpired(){
+  // Keep the device copy (it may hold unsynced changes); just require signing in again.
+  try { localStorage.removeItem('ha.session'); } catch {}
+  session = null; showAuth('signin', 'Your session has ended. Please sign in again.');
+}
+async function handleAuthRedirect(){
+  // Invite and password-reset emails link back here with tokens in the URL fragment.
+  if (location.hash.length < 2) return null;
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (!p.get('access_token') && !p.get('error') && !p.get('error_description')) return null;
+  history.replaceState(null, '', location.pathname + location.search);
+  if (p.get('error') || p.get('error_description')) return {error:(p.get('error_description') || p.get('error')).replace(/\+/g, ' ') + '. Ask for a new link, or use “Forgot password”.'};
+  const user = await authReq('/user', null, 'GET', p.get('access_token'));
+  setSession({access_token:p.get('access_token'), refresh_token:p.get('refresh_token'), expires_at:p.get('expires_at'), expires_in:p.get('expires_in')}, user);
+  return {type:p.get('type')};
+}
+
+/* ---------- cloud sync ---------- */
+const objPath = () => `${CFG.bucket || 'health-data'}/${session.user.id}/data.json`;
+async function download(){
+  const t = await freshToken();
+  const r = await fetch(api('/storage/v1/object/authenticated/' + objPath()), {headers:{apikey:CFG.supabaseAnonKey, Authorization:'Bearer ' + t}, cache:'no-store'});
+  if (r.ok) return r.json();
+  const txt = await r.text();
+  if (r.status === 404 || /not.?found/i.test(txt)) return null; // first sync for this user
+  throw new Error('Could not download your data (' + r.status + ')');
+}
+async function upload(doc){
+  const t = await freshToken();
+  const r = await fetch(api('/storage/v1/object/' + objPath()), {method:'POST', headers:{apikey:CFG.supabaseAnonKey, Authorization:'Bearer ' + t, 'Content-Type':'application/json', 'x-upsert':'true'}, body:JSON.stringify(doc)});
+  if (!r.ok) throw new Error('Could not upload your data (' + r.status + ')');
+}
+function mergeRemote(r){
+  const del = {...deleted};
+  for (const [id, ts] of Object.entries(r.deleted || {})) if (!del[id] || ts > del[id]) del[id] = ts;
+  const byId = new Map();
+  for (const e of (r.entries || []).concat(entries)){ const c = byId.get(e.id); if (!c || (e.updated || '') > (c.updated || '')) byId.set(e.id, e); }
+  entries = [...byId.values()].filter(e => !del[e.id] || (e.updated || '') > del[e.id]);
+  for (const e of entries) delete del[e.id];
+  deleted = del; knownIds = new Set(entries.map(e => e.id)); sortEntries();
+  if (r.settings && (r.settings._updated || '') > (settings._updated || '')) settings = Object.assign({...DEFAULT_SETTINGS}, r.settings);
+}
+let syncTimer;
+function scheduleSync(delay = 1200){ clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, delay); }
+async function syncNow(){
+  if (!session) return;
+  if (sync.busy){ sync.again = true; return; }
+  sync.busy = true; renderSyncStatus();
+  const uid = session.user.id;
+  try {
+    const remote = await download();
+    if (!session || session.user.id !== uid) return;
+    const sig = d => JSON.stringify([d.entries || [], d.settings || {}, d.deleted || {}]);
+    const before = sig({entries, settings, deleted});
+    if (remote) mergeRemote(remote);
+    const mine = {entries, settings, deleted};
+    if (!remote || sig(remote) !== sig(mine)) await upload({app:'health-aware', version:2, email:session.user.email, updated:new Date().toISOString(), ...mine});
+    sync.dirty = false; sync.last = new Date().toISOString(); sync.error = ''; persist();
+    if (sig(mine) !== before && $('#sheet').classList.contains('hidden')) render();
+  } catch (e) {
+    sync.error = navigator.onLine === false ? 'Offline — changes will sync when you are back online.' : e.message;
+  } finally {
+    sync.busy = false; renderSyncStatus();
+    if (sync.again){ sync.again = false; scheduleSync(300); }
+  }
+}
+function renderSyncStatus(){
+  if (!session) return;
+  const [color, label] = sync.busy ? ['var(--accent)', 'Syncing…'] : sync.error ? ['var(--warn)', navigator.onLine === false ? 'Offline' : 'Not synced'] : sync.dirty ? ['var(--warn)', 'Pending'] : ['var(--good)', 'Synced'];
+  const pill = $('#sync-pill'); if (pill) pill.innerHTML = `<span class="dot" style="background:${color}"></span>${label}`;
+  const st = $('#sync-status');
+  if (st) st.textContent = sync.error ? sync.error : sync.busy ? 'Syncing…' : sync.last ? `Last synced ${new Date(sync.last).toLocaleString()}` + (sync.dirty ? ' · changes waiting' : '') : 'Not synced yet.';
+}
+window.addEventListener('online', () => session && syncNow());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && session) syncNow(); });
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
 
 /* ---------- categories ---------- */
@@ -472,6 +633,8 @@ function show(v){
 }
 $('#tabbar').addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.v); });
 function render(){
+  if (!session) return;
+  renderSyncStatus();
   if (view === 'log') renderLog();
   else if (view === 'history') renderHistory();
   else if (view === 'reports') renderReports();
@@ -513,7 +676,7 @@ function installGuideHTML(compact){
   <div class="intro">
     <h2>${compact ? 'Install or share this app' : 'Get Health Aware on your iPhone'}</h2>
     ${here ? `This app is online at <code>${esc(here)}</code>. Send that link to your iPhone (step 2), then add it to your Home Screen (step 3).`
-           : 'Three one-time steps: put the app online from your MacBook, send the link to your iPhone, then add it to the Home Screen. Only the app goes online — your health entries never leave the phone.'}
+           : 'Three one-time steps: put the app online from your MacBook, send the link to your iPhone, then add it to the Home Screen. Your entries are protected by your sign-in and stored in your own private file that only you can read.'}
     <div class="steps"><span>1 · Put online</span><span>2 · Send to iPhone</span><span>3 · Add to Home Screen</span></div>
   </div>
 
@@ -574,9 +737,9 @@ function installGuideHTML(compact){
   </div></details>
 
   <details><summary><span class="n">+</span>Moving data and getting updates</summary><div class="dbody">
-    <h4>Move entries to another device</h4>
-    <ol><li>On the old device: <b>Settings → Save backup</b> and send the file with AirDrop, Mail or iCloud Drive.</li>
-      <li>On the new device: <b>Settings → Restore backup</b> and choose the file.</li></ol>
+    <h4>Use another device</h4>
+    <ul><li>Just sign in with the same email and password — your entries sync automatically.</li>
+      <li>A backup file (<b>Settings → Save backup</b>) is an extra copy you can keep in Files or iCloud Drive.</li></ul>
     <h4>Install a new version</h4>
     <ul><li>Upload the updated HealthAware folder to the same place (Netlify: drag it onto <b>Deploys</b> for your site; GitHub: upload and commit again).</li>
       <li>On the iPhone, close and reopen the app once or twice to load the update. Your entries stay.</li></ul>
@@ -1079,6 +1242,9 @@ async function shareFile(name, type, text, title){
 
 /* ---------- settings ---------- */
 function renderSettings(){
+  $('#acct-email').textContent = session.user.email;
+  $('#acct-avatar').textContent = (settings.name || session.user.email).trim()[0].toUpperCase();
+  $('#chpw-user').value = session.user.email;
   $('#s-name').value = settings.name; $('#s-dob').value = settings.dob; $('#s-provider').value = settings.provider; $('#s-email').value = settings.providerEmail;
   $$('#s-unit button').forEach(b => b.classList.toggle('on', b.dataset.v === settings.weightUnit));
   $$('#s-goal button').forEach(b => b.classList.toggle('on', b.dataset.v === settings.weightGoal));
@@ -1115,7 +1281,7 @@ $('#restore-file').addEventListener('change', async e => {
 });
 $('#btn-wipe').addEventListener('click', () => {
   if (!entries.length) return toast('Nothing to delete');
-  if (confirm(`Delete all ${entries.length} entries? Save a backup first if you may need them.`) && confirm('Are you sure? This cannot be undone.')){ entries = []; saveEntries(); renderSettings(); toast('All entries deleted'); }
+  if (confirm(`Delete all ${entries.length} entries from your account on every device? Save a backup first if you may need them.`) && confirm('Are you sure? This cannot be undone.')){ entries = []; saveEntries(); renderSettings(); toast('All entries deleted'); }
 });
 $('#btn-sample').addEventListener('click', () => {
   if (entries.some(e => !e.sample) && !confirm('Add sample entries alongside your real data? You can remove them later by deleting them.')) return;
@@ -1138,9 +1304,133 @@ function sampleData(){
   return out;
 }
 
+/* ---------- sign-in screens ---------- */
+let authMode = 'signin';
+function showAuth(mode, msg, ok){
+  authMode = mode;
+  for (const k of ['log','history','reports','settings']) $('#view-' + k).classList.add('hidden');
+  $('#tabbar').classList.add('hidden'); closeSheet();
+  $('#view-auth').classList.remove('hidden');
+  const note = msg ? `<div class="msg ${ok ? 'ok' : 'err'}">${esc(msg)}</div>` : '';
+  const sub = $('#auth-sub'), body = $('#auth-body');
+  if (mode === 'config'){
+    sub.textContent = 'Setup needed';
+    body.innerHTML = `<div class="card" style="text-align:left;margin-top:18px">This copy of the app is not connected to its secure data service yet. Add the Supabase project URL and anon key to <code>config.js</code>.</div>`;
+  } else if (mode === 'signin'){
+    sub.textContent = 'Sign in to your private health log';
+    body.innerHTML = `<form class="card" id="f-signin">
+      <label for="a-email">Email</label><input type="email" id="a-email" autocomplete="username" autocapitalize="off" required value="${esc(load('ha.lastEmail', '') || '')}">
+      <label for="a-pw">Password</label><input type="password" id="a-pw" autocomplete="current-password" required>
+      <button class="btn primary block" style="margin-top:16px">Sign in</button>${note}
+      <div class="alt"><button type="button" class="linkbtn" data-auth="forgot" style="font-size:15px">Forgot password?</button></div>
+    </form><div class="muted">Accounts are by invitation only. Ask the account owner for an invite.</div>`;
+  } else if (mode === 'forgot'){
+    sub.textContent = 'Reset your password';
+    body.innerHTML = `<form class="card" id="f-forgot">
+      <label for="a-email">Email</label><input type="email" id="a-email" autocomplete="username" autocapitalize="off" required value="${esc(load('ha.lastEmail', '') || '')}">
+      <button class="btn primary block" style="margin-top:16px">Email me a reset link</button>${note}
+      <div class="alt"><button type="button" class="linkbtn" data-auth="signin" style="font-size:15px">Back to sign in</button></div>
+    </form>`;
+  } else if (mode === 'setpw'){
+    sub.textContent = session ? `Choose a password for ${session.user.email}` : 'Choose a password';
+    body.innerHTML = `<form class="card" id="f-setpw">
+      <input type="text" autocomplete="username" value="${esc(session ? session.user.email : '')}" class="hidden" readonly>
+      <label for="a-pw1">New password (at least 10 characters)</label><input type="password" id="a-pw1" autocomplete="new-password" minlength="10" required>
+      <label for="a-pw2">Confirm password</label><input type="password" id="a-pw2" autocomplete="new-password" minlength="10" required>
+      <button class="btn primary block" style="margin-top:16px">Save password</button>${note}
+    </form>`;
+  }
+  const first = $('#view-auth input:not([readonly]):not([value]), #view-auth input[value=""]');
+  if (first && mode !== 'config') setTimeout(() => first.focus(), 50);
+}
+function showApp(){
+  $('#view-auth').classList.add('hidden');
+  $('#tabbar').classList.remove('hidden');
+  show('log');
+}
+async function startUser(){
+  try { localStorage.setItem('ha.lastEmail', JSON.stringify(session.user.email)); } catch {}
+  loadUserData(); showApp();
+  await syncNow();
+  offerLegacyImport();
+}
+function offerLegacyImport(){
+  // Entries saved on this device before sign-in existed can be moved into the signed-in account once.
+  const legacy = load(LEGACY_E, null);
+  if (!session || !Array.isArray(legacy) || !legacy.length) return;
+  if (!confirm(`This device has ${legacy.length} entries saved before sign-in was added.\n\nImport them into the account ${session.user.email}?\n\n(Choose Cancel if they belong to someone else — they will stay on this device until the right person signs in.)`)) return;
+  const have = new Set(entries.map(e => e.id)), now = new Date().toISOString();
+  entries = entries.concat(legacy.filter(e => !have.has(e.id)).map(e => ({...e, updated:e.updated || now})));
+  const ls = load(LEGACY_S, null);
+  if (ls) for (const k of ['name', 'dob', 'provider', 'providerEmail', 'weightUnit', 'weightGoal']) if (!settings[k] && ls[k]) settings[k] = ls[k];
+  if (ls && Array.isArray(ls.meds)) for (const m of ls.meds) if (!settings.meds.some(x => x.name.toLowerCase() === m.name.toLowerCase())) settings.meds.push(m);
+  sortEntries(); saveEntries(); saveSettings();
+  try { localStorage.removeItem(LEGACY_E); localStorage.removeItem(LEGACY_S); } catch {}
+  render(); toast(`Imported ${legacy.length} entries`);
+}
+$('#view-auth').addEventListener('click', e => { const b = e.target.closest('[data-auth]'); if (b) showAuth(b.dataset.auth); });
+$('#view-auth').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, btn = $('button:not([type=button])', f), label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Please wait…';
+  try {
+    if (f.id === 'f-signin'){
+      const email = $('#a-email').value.trim().toLowerCase();
+      const j = await authReq('/token?grant_type=password', {email, password:$('#a-pw').value});
+      setSession(j, j.user); await startUser();
+    } else if (f.id === 'f-forgot'){
+      const email = $('#a-email').value.trim().toLowerCase();
+      await authReq('/recover?redirect_to=' + encodeURIComponent(location.origin + location.pathname), {email});
+      try { localStorage.setItem('ha.lastEmail', JSON.stringify(email)); } catch {}
+      showAuth('signin', 'If that email has an account, a reset link is on its way. Open it, choose a new password, then sign in here.', true);
+    } else if (f.id === 'f-setpw'){
+      const a = $('#a-pw1').value, b = $('#a-pw2').value;
+      if (a.length < 10) throw new Error('Use at least 10 characters.');
+      if (a !== b) throw new Error('The two passwords do not match.');
+      await authReq('/user', {password:a}, 'PUT', await freshToken());
+      await startUser();
+      toast('Password saved');
+      if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches)) setTimeout(() => alert('Password saved.\n\nIf Health Aware is on your Home Screen, open it from there and sign in with this email and password.'), 400);
+    }
+  } catch (err) {
+    const m = /invalid login credentials/i.test(err.message) ? 'Email or password is incorrect.' : err.message;
+    const old = $('.msg', f); if (old) old.remove();
+    btn.insertAdjacentHTML('afterend', `<div class="msg err">${esc(m)}</div>`);
+  } finally { btn.disabled = false; btn.textContent = label; }
+});
+
+/* ---------- account actions ---------- */
+$('#btn-sync').addEventListener('click', () => syncNow());
+$('#sync-pill').addEventListener('click', () => show('settings'));
+$('#btn-chpw').addEventListener('click', () => { $('#chpw-form').classList.toggle('hidden'); $('#chpw-1').focus(); });
+$('#chpw-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const a = $('#chpw-1').value, b = $('#chpw-2').value;
+  if (a.length < 10) return alert('Use at least 10 characters.');
+  if (a !== b) return alert('The two passwords do not match.');
+  try { await authReq('/user', {password:a}, 'PUT', await freshToken()); $('#chpw-form').reset(); $('#chpw-form').classList.add('hidden'); toast('Password changed'); }
+  catch (err) { alert('Could not change password: ' + err.message); }
+});
+$('#btn-signout').addEventListener('click', async () => {
+  if (sync.dirty) await syncNow();
+  if (sync.dirty && !confirm('Some changes have not synced yet and will be lost if you sign out now. Sign out anyway?')) return;
+  if (!sync.dirty && !confirm('Sign out? Your data stays safe in your account and is removed from this device until you sign in again.')) return;
+  try { await authReq('/logout', {}, 'POST', session.access_token); } catch {}
+  try { localStorage.removeItem(userKey()); localStorage.removeItem('ha.session'); } catch {}
+  session = null; entries = []; settings = {...DEFAULT_SETTINGS}; deleted = {}; knownIds = new Set();
+  showAuth('signin', 'Signed out.', true);
+});
+
 /* ---------- boot ---------- */
-sortEntries();
-render();
+(async () => {
+  if (!CFG.supabaseUrl || !CFG.supabaseAnonKey) return showAuth('config');
+  let redirect = null;
+  try { redirect = await handleAuthRedirect(); } catch (e) { redirect = {error:'That link could not be used: ' + e.message}; }
+  if (redirect && redirect.error) return showAuth('signin', redirect.error);
+  if (!session) return showAuth('signin');
+  if (redirect && (redirect.type === 'invite' || redirect.type === 'recovery')) return showAuth('setpw');
+  startUser();
+})();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
