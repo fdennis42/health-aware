@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Health Aware">
+<meta name="theme-color" content="#e3eefc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16253d" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Health Aware</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#fdf8f1; --card:#ffffff; --ink:#1b2d4a; --ink2:#4d5d75; --muted:#8a8578;
+  --line:#efe6da; --axis:#d9cfc1; --chip:#f4ede3; --chip-on:#2a78d6; --chip-on-ink:#fff;
+  --accent:#2a78d6; --accent-soft:#e7f0fc; --accent-ink:#1c5cab; --hero:linear-gradient(180deg,#e3eefc 0%,#fdf8f1 100%);
+  --s1:#2a78d6; --s2:#eb6834; --band:rgba(12,163,12,.10);
+  --good:#0ca30c; --good-ink:#006300; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --crit-ink:#b42828;
+  --ring:rgba(120,95,60,.12); --shadow:0 2px 8px rgba(120,90,50,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0f1622; --card:#172131; --ink:#eef3fa; --ink2:#b8c4d6; --muted:#8793a6;
+    --line:#243247; --axis:#34455f; --chip:#22304a; --chip-on:#3987e5; --chip-on-ink:#fff;
+    --accent:#5598e7; --accent-soft:#1d3050; --accent-ink:#9ec5f4; --hero:linear-gradient(180deg,#16253d 0%,#0f1622 100%);
+    --s1:#5598e7; --s2:#d95926; --band:rgba(12,163,12,.16);
+    --good-ink:#0ca30c; --crit-ink:#e66767; --ring:rgba(255,255,255,.08); --shadow:none;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+body{padding-bottom:calc(72px + env(safe-area-inset-bottom));background:var(--hero) top / 100% 320px no-repeat, var(--bg);min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1{font-size:28px;margin:0;letter-spacing:-.01em}
+h2{font-size:19px;margin:0 0 8px}
+h3{font-size:15px;margin:0}
+.wrap{max-width:640px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 16px 24px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 16px}
+.sub{color:var(--ink2);font-size:14px}
+.muted{color:var(--muted);font-size:13px}
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);outline:1px solid var(--ring);padding:14px;margin-bottom:12px}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-ink);font-weight:600;margin:22px 4px 8px}
+.hidden{display:none!important}
+
+/* Log tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--card);outline:1px solid var(--ring);box-shadow:var(--shadow);border:0;border-radius:16px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:104px}
+.tile:active{transform:scale(.98)}
+.tile .em{width:44px;height:44px;border-radius:13px;background:var(--accent-soft);display:grid;place-items:center;font-size:24px;line-height:1;flex:none}
+.tile b{font-size:16px}
+.tile .muted{font-size:12px}
+.tile.wide{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:12px}
+
+/* entries */
+.day{margin:18px 4px 6px;font-weight:600;font-size:14px;color:var(--accent-ink)}
+.entry{display:flex;gap:12px;align-items:flex-start;background:var(--card);outline:1px solid var(--ring);border-radius:14px;padding:12px;margin-bottom:8px;border:0;width:100%;text-align:left}
+.entry .em{font-size:20px;width:36px;height:36px;border-radius:10px;background:var(--accent-soft);display:grid;place-items:center;flex:none}
+.entry .body{flex:1;min-width:0}
+.entry .t{display:flex;justify-content:space-between;gap:8px}
+.entry .t span{color:var(--muted);font-size:13px;white-space:nowrap}
+.entry .s{font-size:14px;color:var(--ink2);margin-top:2px}
+.entry .a{font-size:13px;color:var(--ink2);margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.empty{text-align:center;color:var(--muted);padding:28px 12px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:0;background:var(--chip);border-radius:999px;padding:7px 12px;font-size:14px;line-height:1.2}
+.chip.on{background:var(--chip-on);color:var(--chip-on-ink)}
+.seg{display:flex;background:var(--chip);border-radius:10px;padding:2px;gap:2px}
+.seg button{flex:1;border:0;background:transparent;border-radius:8px;padding:7px 4px;font-size:14px}
+.seg button.on{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+
+/* tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:10}
+.tabbar button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted);padding:4px 0}
+.tabbar button svg{width:24px;height:24px}
+.tabbar button.on{color:var(--accent)}
+
+/* sheet */
+.sheet{position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.sheet-head{position:sticky;top:0;z-index:2;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid var(--line)}
+.sheet-head h2{margin:0;font-size:17px}
+.linkbtn{border:0;background:none;color:var(--accent);font-size:17px;padding:6px 2px}
+.linkbtn.strong{font-weight:600}
+.sheet-body{max-width:640px;margin:0 auto;padding:14px 16px calc(40px + env(safe-area-inset-bottom))}
+.field{margin-bottom:18px}
+.flabel{font-size:14px;font-weight:600;margin:0 0 8px;color:var(--ink)}
+.req{font-weight:400;color:var(--muted);font-size:12px}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+input[type=text],input[type=number],input[type=email],input[type=date],input[type=datetime-local],textarea,select{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;min-height:44px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+textarea{min-height:72px;resize:vertical}
+.nums{display:flex;gap:8px}
+.nums label{flex:1;display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink2);min-width:0}
+.nums input{font-size:22px;font-weight:600;text-align:center;padding:8px 4px}
+.scale{display:grid;grid-template-columns:repeat(11,1fr);gap:3px}
+.scale button{border:0;background:var(--chip);border-radius:8px;height:40px;font-size:15px;padding:0}
+.scale button.on{background:hsl(var(--h) 70% 42%);color:#fff;font-weight:700}
+.bristol{display:flex;flex-direction:column;gap:6px}
+.bristol button{display:flex;gap:10px;align-items:center;border:0;background:var(--chip);border-radius:10px;padding:8px 10px;text-align:left;font-size:14px}
+.bristol button b{width:22px;text-align:center}
+.bristol button.on{background:var(--chip-on);color:var(--chip-on-ink)}
+.bristol small{margin-left:auto;opacity:.7;font-size:12px;white-space:nowrap}
+.act{background:var(--card);outline:1px solid var(--ring);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.acthead{display:flex;gap:8px;align-items:center}
+.acthead .seg{flex:1}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:8px}
+.btn{border:0;border-radius:12px;padding:12px 14px;font-size:16px;font-weight:600;background:var(--accent-soft);color:var(--accent-ink);min-height:44px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{background:none;color:var(--crit-ink);outline:1px solid var(--line)}
+.btn.block{width:100%}
+.btn.sm{padding:7px 12px;font-size:14px;min-height:0;border-radius:10px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow .btn{flex:1}
+.bpcat{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;margin-top:8px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+
+/* reports */
+.status{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--chip);white-space:nowrap}
+.status i{font-style:normal;width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:11px}
+.rhead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin:8px 0 10px}
+.stat{background:var(--accent-soft);border-radius:10px;padding:8px 10px}
+.stat .v{color:var(--ink)}
+.stat .v{font-size:20px;font-weight:650}
+.stat .l{font-size:12px;color:var(--muted)}
+.stat .d{font-size:12px;color:var(--ink2)}
+.facts{font-size:14px;color:var(--ink2);margin:8px 0 0;padding-left:18px}
+.facts li{margin:2px 0}
+.chart{position:relative;margin-top:6px}
+.chart svg{display:block;width:100%;height:auto;touch-action:pan-y;overflow:visible}
+.chart .ct{font-size:13px;color:var(--ink2);margin:10px 0 2px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.legend{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2)}
+.legend .sw{width:12px;height:3px;border-radius:2px;display:inline-block}
+.tip{position:absolute;pointer-events:none;background:var(--card);outline:1px solid var(--ring);box-shadow:0 4px 14px rgba(0,0,0,.15);border-radius:8px;padding:6px 8px;font-size:12px;white-space:nowrap;z-index:3;transform:translateX(-50%)}
+.tip b{display:block;font-size:12px;margin-bottom:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--chip-on);color:var(--chip-on-ink);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.settings label{display:block;font-size:14px;font-weight:600;margin:12px 0 6px}
+.medrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.install{font-size:14px;color:var(--ink2);margin-top:26px}
+.install .intro{background:var(--accent-soft);border-radius:16px;padding:14px;margin-bottom:10px;color:var(--ink)}
+.install .intro h2{color:var(--accent-ink);margin-bottom:4px}
+.install .steps{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.install .steps span{background:var(--card);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600;color:var(--accent-ink)}
+.install details{background:var(--card);outline:1px solid var(--ring);box-shadow:var(--shadow);border-radius:14px;margin-bottom:8px;overflow:hidden}
+.install summary{list-style:none;cursor:pointer;padding:13px 14px;font-weight:600;color:var(--ink);display:flex;gap:10px;align-items:center}
+.install summary::-webkit-details-marker{display:none}
+.install summary::after{content:'›';margin-left:auto;font-size:20px;color:var(--muted);transition:transform .2s}
+.install details[open] summary::after{transform:rotate(90deg)}
+.install summary .n{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;flex:none}
+.install .dbody{padding:0 14px 12px}
+.install h4{margin:12px 0 4px;font-size:14px;color:var(--accent-ink)}
+.install ol,.install ul{padding-left:20px;margin:4px 0}
+.install li{margin:3px 0}
+.install code{background:var(--chip);border-radius:6px;padding:1px 5px;font-size:13px;word-break:break-all}
+.install .note{background:var(--chip);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:13px}
+
+#print-root{display:none}
+@media print{
+  body{padding:0;background:#fff}
+  body > *:not(#print-root){display:none!important}
+  #print-root{display:block}
+}
+</style>
+<style id="report-css">
+#print-root,.report-doc{
+  --bg:#fdf8f1; --card:#fff; --ink:#1b2d4a; --ink2:#4d5d75; --muted:#77736a; --line:#efe6da; --axis:#d9cfc1;
+  --s1:#2a78d6; --s2:#eb6834; --band:rgba(12,163,12,.10); --chip:#ecebe6;
+  --good:#0ca30c; --good-ink:#006300; --warn:#fab219; --crit:#d03b3b; --crit-ink:#b42828;
+  color:#1b2d4a; background:#fff; font:12px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+.report-doc{max-width:780px;margin:0 auto;padding:24px}
+.rp-h{display:flex;justify-content:space-between;gap:16px;border-bottom:3px solid #2a78d6;padding-bottom:8px;margin-bottom:12px}
+.rp-h h1{font-size:20px;margin:0;color:#1c5cab}
+.rp-h .meta{font-size:12px;color:#52514e;text-align:right}
+.rp-sec{break-inside:avoid;page-break-inside:avoid;border:1px solid #e3ddd2;border-radius:10px;padding:10px 12px;margin:0 0 10px}
+.rp-sec h2{color:#1c5cab;font-size:15px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.rp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.rp-sec table,.rp-log table{width:100%;border-collapse:collapse;font-size:11px}
+.rp-sec th,.rp-sec td,.rp-log th,.rp-log td{text-align:left;padding:3px 5px;border-bottom:1px solid #e1e0d9;vertical-align:top}
+.rp-sec th,.rp-log th{color:#6f6e69;font-weight:600}
+.rp-sec ul{margin:4px 0 0;padding-left:16px}
+.rp-sec .status{font-size:11px;padding:2px 8px;border-radius:999px;background:#ecebe6;display:inline-flex;gap:5px;align-items:center;font-weight:600}
+.rp-sec .status i{font-style:normal;width:14px;height:14px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:9px}
+.rp-sec svg{width:100%;height:auto;display:block}
+.rp-sec .ct{font-size:11px;color:#52514e;margin:4px 0 0;display:flex;gap:10px;flex-wrap:wrap}
+.rp-sec .legend{display:inline-flex;gap:4px;align-items:center}
+.rp-sec .legend .sw{width:10px;height:3px;display:inline-block;border-radius:2px}
+.rp-log{margin-top:14px}
+.rp-log h2{font-size:15px;margin:0 0 6px}
+.rp-note{font-size:10px;color:#6f6e69;margin-top:12px}
+@media (max-width:600px){.rp-grid{grid-template-columns:1fr}}
+@page{margin:14mm}
+</style>
+</head>
+<body>
+
+<!-- LOG -->
+<main id="view-log" class="wrap">
+  <div class="top">
+    <div><div class="sub" id="today-date"></div><h1>Log</h1></div>
+  </div>
+  <div class="tiles" id="tiles"></div>
+  <div class="section-title">Today</div>
+  <div id="today-list"></div>
+  <div id="install-tip" class="install hidden"></div>
+</main>
+
+<!-- HISTORY -->
+<main id="view-history" class="wrap hidden">
+  <div class="top"><h1>History</h1></div>
+  <div class="chips" id="hist-filter" style="margin-bottom:6px"></div>
+  <div id="hist-list"></div>
+</main>
+
+<!-- REPORTS -->
+<main id="view-reports" class="wrap hidden">
+  <div class="top"><h1>Trends</h1></div>
+  <div class="seg" id="range-seg" style="margin-bottom:8px">
+    <button data-r="7">7D</button><button data-r="30">30D</button><button data-r="90">90D</button><button data-r="180">6M</button><button data-r="365">1Y</button><button data-r="all">All</button>
+  </div>
+  <div class="muted" id="range-label" style="margin:0 4px 10px"></div>
+  <div class="card">
+    <h2>Send to provider</h2>
+    <div class="muted" style="margin-bottom:10px">Uses the date range selected above.</div>
+    <div class="btnrow">
+      <button class="btn primary" id="btn-print">Print / PDF</button>
+      <button class="btn" id="btn-share-report">Share report</button>
+    </div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn" id="btn-csv">Share CSV data</button>
+      <button class="btn" id="btn-email">Email summary</button>
+    </div>
+  </div>
+  <div id="report-cards"></div>
+</main>
+
+<!-- SETTINGS -->
+<main id="view-settings" class="wrap hidden settings">
+  <div class="top"><h1>Settings</h1></div>
+  <div class="card">
+    <h2>For your reports</h2>
+    <label for="s-name">Your name</label><input type="text" id="s-name" autocomplete="name">
+    <label for="s-dob">Date of birth</label><input type="date" id="s-dob">
+    <label for="s-provider">Provider name</label><input type="text" id="s-provider" placeholder="e.g. Dr. Smith">
+    <label for="s-email">Provider email (for “Email summary”)</label><input type="email" id="s-email" autocomplete="off">
+  </div>
+  <div class="card">
+    <h2>Weight</h2>
+    <label>Units</label>
+    <div class="seg" id="s-unit"><button data-v="lb">Pounds (lb)</button><button data-v="kg">Kilograms (kg)</button></div>
+    <label>Goal (used to judge weight trend)</label>
+    <div class="seg" id="s-goal"><button data-v="lose">Lose</button><button data-v="maintain">Maintain</button><button data-v="gain">Gain</button></div>
+  </div>
+  <div class="card">
+    <h2>My medications &amp; remedies</h2>
+    <div class="muted">These appear as one-tap choices when logging.</div>
+    <div id="med-list" style="margin:8px 0"></div>
+    <div class="seg" id="med-kind" style="margin-bottom:8px"><button data-v="med" class="on">Medication</button><button data-v="action">Action / remedy</button></div>
+    <div class="row2"><input type="text" id="med-name" placeholder="Name, e.g. Lisinopril"><input type="text" id="med-dose" placeholder="Dose, e.g. 10 mg"></div>
+    <button class="btn block" id="med-add" style="margin-top:8px">Add</button>
+  </div>
+  <div class="card">
+    <h2>Backup</h2>
+    <div class="muted" id="backup-info" style="margin-bottom:10px"></div>
+    <div class="btnrow">
+      <button class="btn" id="btn-backup">Save backup</button>
+      <button class="btn" id="btn-restore">Restore backup</button>
+    </div>
+    <input type="file" id="restore-file" accept="application/json,.json" class="hidden">
+    <div class="muted" style="margin-top:10px">Your data stays on this iPhone only. Save a backup to Files or iCloud Drive regularly.</div>
+  </div>
+  <div class="card">
+    <h2>Data</h2>
+    <button class="btn danger block" id="btn-sample">Load sample data (to try it out)</button>
+    <button class="btn danger block" id="btn-wipe" style="margin-top:8px">Delete all entries</button>
+  </div>
+  <div class="install" id="install-guide-settings"></div>
+  <div class="muted" style="text-align:center;margin:18px 0">Health Aware · for personal tracking, not medical advice.</div>
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button data-v="log" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Log</button>
+  <button data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>History</button>
+  <button data-v="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 3 8-8"/><path d="M15 7h5v5"/></svg>Trends</button>
+  <button data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Settings</button>
+</nav>
+
+<div id="sheet" class="sheet hidden"></div>
+<div id="toast" class="toast"></div>
+<div id="print-root"></div>
+<datalist id="dl-names"></datalist>
+
+<script>
+'use strict';
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, '0');
+const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const nowLocal = () => toLocal(new Date());
+const parseLocal = s => { const [d, t = '00:00'] = s.split('T'); const [y, m, da] = d.split('-').map(Number); const [h, mi] = t.split(':').map(Number); return new Date(y, m - 1, da, h, mi); };
+const dayNum = key => { const [y, m, d] = key.slice(0, 10).split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / 864e5); };
+const keyOf = n => { const d = new Date(n * 864e5); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`; };
+const fmtDay = n => new Date(n * 864e5).toLocaleDateString(undefined, {timeZone:'UTC', weekday:'short', month:'short', day:'numeric', year: new Date(n*864e5).getUTCFullYear() !== new Date().getFullYear() ? 'numeric' : undefined});
+const fmtShort = n => new Date(n * 864e5).toLocaleDateString(undefined, {timeZone:'UTC', month:'numeric', day:'numeric'});
+const fmtLong = n => new Date(n * 864e5).toLocaleDateString(undefined, {timeZone:'UTC', month:'short', day:'numeric', year:'numeric'});
+const fmtTime = ts => parseLocal(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+const todayNum = () => dayNum(nowLocal());
+const r1 = v => Math.round(v * 10) / 10;
+const num = v => (v === '' || v == null || isNaN(v)) ? undefined : Number(v);
+const arr = v => Array.isArray(v) ? v : (v ? [v] : []);
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 1800); }
+function ago(ts){
+  const m = Math.round((Date.now() - parseLocal(ts)) / 6e4);
+  if (m < 1) return 'just now'; if (m < 60) return m + ' min ago';
+  const h = Math.round(m / 60); if (h < 24) return h + ' h ago';
+  const d = Math.round(h / 24); return d === 1 ? 'yesterday' : d + ' days ago';
+}
+
+/* ---------- storage ---------- */
+const LS_E = 'ha.entries.v1', LS_S = 'ha.settings.v1';
+function load(k, def){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch { return def; } }
+let entries = load(LS_E, []);
+let settings = Object.assign({name:'', dob:'', provider:'', providerEmail:'', weightUnit:'lb', weightGoal:'maintain', meds:[], lastBackup:null}, load(LS_S, {}));
+function saveEntries(){ try { localStorage.setItem(LS_E, JSON.stringify(entries)); } catch (e) { alert('Could not save data: ' + e.message); } }
+function saveSettings(){ try { localStorage.setItem(LS_S, JSON.stringify(settings)); } catch (e) { alert('Could not save settings: ' + e.message); } }
+const sortEntries = () => entries.sort((a, b) => b.ts.localeCompare(a.ts));
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
+
+/* ---------- categories ---------- */
+const BRISTOL = [
+  [1, 'Separate hard lumps', 'Constipation'],
+  [2, 'Lumpy, sausage-shaped', 'Mild constipation'],
+  [3, 'Sausage with cracks', 'Normal'],
+  [4, 'Smooth, soft sausage', 'Normal'],
+  [5, 'Soft blobs, clear edges', 'Lacking fiber'],
+  [6, 'Mushy, ragged edges', 'Mild diarrhea'],
+  [7, 'Watery, no solid pieces', 'Diarrhea'],
+];
+const RELIEF = [['', 'Not sure yet'], ['none', 'No relief'], ['some', 'Some'], ['good', 'Good'], ['full', 'Complete']];
+const RELIEF_SCORE = {none:0, some:1, good:2, full:3};
+const sevWord = v => v == null ? '' : v === 0 ? 'None' : v <= 3 ? 'Mild' : v <= 6 ? 'Moderate' : 'Severe';
+
+const CATS = {
+  headache: { label:'Headache', emoji:'🤕', fields:[
+    {k:'severity', t:'scale', label:'Severity'},
+    {k:'type', t:'choice', label:'Type (if known)', opts:['Tension','Migraine','Cluster','Sinus','Unsure']},
+    {k:'location', t:'multi', label:'Location', opts:['Forehead','Temples','Behind eyes','Top of head','Back of head','Left side','Right side','Whole head','Neck']},
+    {k:'quality', t:'multi', label:'Characteristics', opts:['Throbbing','Pressing / tight','Stabbing','Dull ache','Pulsing','Burning']},
+    {k:'onset', t:'choice', label:'Onset', opts:['Sudden','Gradual','Woke up with it']},
+    {k:'symptoms', t:'multi', label:'Other symptoms', opts:['Nausea','Vomiting','Light sensitivity','Sound sensitivity','Aura / vision changes','Dizziness','Neck stiffness','Fatigue']},
+    {t:'nums', items:[{k:'duration', label:'Duration', unit:'hours', step:0.5, min:0, max:168}]},
+    {k:'triggers', t:'multi', label:'Possible triggers', opts:['Stress','Poor sleep','Screen time','Dehydration','Skipped meal','Caffeine','Alcohol','Weather','Certain food','Posture','Bright light','Unknown']},
+  ]},
+  bp: { label:'Blood Pressure', emoji:'❤️', fields:[
+    {t:'nums', items:[
+      {k:'sys', label:'Systolic', unit:'mmHg', min:50, max:260, req:true},
+      {k:'dia', label:'Diastolic', unit:'mmHg', min:30, max:160, req:true},
+      {k:'pulse', label:'Pulse', unit:'bpm', min:30, max:220}]},
+    {t:'bpcat'},
+    {k:'arm', t:'choice', label:'Arm', opts:['Left','Right']},
+    {k:'position', t:'choice', label:'Position', opts:['Sitting','Standing','Lying down']},
+    {k:'timing', t:'choice', label:'Time of day', opts:['Morning','Midday','Evening','Bedtime']},
+    {k:'context', t:'multi', label:'Context', opts:['Before BP meds','After BP meds','Rested 5 min','After exercise','After caffeine','Stressed','Home cuff','At clinic']},
+    {k:'symptoms', t:'multi', label:'Symptoms', opts:['None','Headache','Dizziness','Chest discomfort','Shortness of breath','Blurred vision','Palpitations','Fatigue']},
+  ]},
+  pain: { label:'Back / Shoulder Pain', emoji:'🦴', fields:[
+    {k:'area', t:'multi', label:'Area', opts:['Neck','Upper back','Mid back','Lower back','Left shoulder','Right shoulder','Between shoulder blades','Hip / buttock','Down the leg','Down the arm']},
+    {k:'severity', t:'scale', label:'Severity'},
+    {k:'quality', t:'multi', label:'Characteristics', opts:['Aching','Sharp','Stabbing','Burning','Stiffness','Spasm','Radiating','Numbness / tingling','Weakness']},
+    {k:'pattern', t:'choice', label:'Pattern', opts:['Constant','Comes and goes','Only with movement','Worse in morning','Worse at night']},
+    {k:'triggers', t:'multi', label:'Possible triggers', opts:['Lifting','Prolonged sitting','Standing','Sleep position','Exercise','Desk / computer','Driving','Stress','Injury','Unknown']},
+    {k:'impact', t:'choice', label:'Impact on daily activity', opts:['None','Mild','Moderate','Severe']},
+  ]},
+  weight: { label:'Weight', emoji:'⚖️', fields:[
+    {t:'nums', items:[{k:'weight', label:'Weight', unit:'@unit', step:0.1, min:20, max:1000, req:true}]},
+    {k:'timing', t:'choice', label:'When', opts:['Morning, before eating','After eating','Evening']},
+    {k:'clothing', t:'choice', label:'Clothing', opts:['None / minimal','Light','Full clothing']},
+  ]},
+  bowel: { label:'IBS / Bowel', emoji:'🌀', fields:[
+    {k:'event', t:'choice', label:'Entry type', opts:['Bowel movement','Symptoms only']},
+    {k:'bristol', t:'bristol', label:'Stool type (Bristol scale)'},
+    {k:'urgency', t:'choice', label:'Urgency', opts:['None','Mild','Moderate','Severe / accident']},
+    {k:'pain', t:'scale', label:'Abdominal pain / cramping'},
+    {k:'symptoms', t:'multi', label:'Symptoms', opts:['Bloating','Cramping','Gas','Straining','Incomplete emptying','Mucus','Blood','Nausea','Heartburn']},
+    {k:'triggers', t:'multi', label:'Possible triggers', opts:['Dairy','Gluten / wheat','Fatty / fried food','Spicy food','Caffeine','Alcohol','High-FODMAP food','Large meal','Stress','Poor sleep','Unknown']},
+    {k:'food', t:'text', label:'Recent food / drink (optional)'},
+  ]},
+};
+const CAT_KEYS = Object.keys(CATS);
+
+function bpCategory(sys, dia){
+  if (sys == null || dia == null) return null;
+  if (sys > 180 || dia > 120) return {label:'Hypertensive crisis', color:'var(--crit)', lvl:4};
+  if (sys >= 140 || dia >= 90) return {label:'High – Stage 2', color:'var(--crit)', lvl:3};
+  if (sys >= 130 || dia >= 80) return {label:'High – Stage 1', color:'var(--serious)', lvl:2};
+  if (sys >= 120) return {label:'Elevated', color:'var(--warn)', lvl:1};
+  return {label:'Normal', color:'var(--good)', lvl:0};
+}
+const toUnit = (w, from) => { const u = settings.weightUnit; if (!from || from === u) return w; return u === 'kg' ? w * 0.45359237 : w / 0.45359237; };
+
+function summary(e){
+  const f = e.f || {};
+  const bits = [];
+  switch (e.cat){
+    case 'headache':
+      if (f.severity != null) bits.push(`${f.severity}/10 ${sevWord(f.severity)}`);
+      if (f.type) bits.push(f.type);
+      if (arr(f.location).length) bits.push(arr(f.location).join(', '));
+      if (f.duration != null) bits.push(`${f.duration} h`);
+      break;
+    case 'bp': {
+      bits.push(`${f.sys ?? '?'}/${f.dia ?? '?'} mmHg`);
+      if (f.pulse != null) bits.push(`pulse ${f.pulse}`);
+      const c = bpCategory(f.sys, f.dia); if (c) bits.push(c.label);
+      if (f.arm) bits.push(f.arm + ' arm');
+      break; }
+    case 'pain':
+      if (arr(f.area).length) bits.push(arr(f.area).join(', '));
+      if (f.severity != null) bits.push(`${f.severity}/10 ${sevWord(f.severity)}`);
+      if (arr(f.quality).length) bits.push(arr(f.quality).slice(0, 2).join(', '));
+      break;
+    case 'weight':
+      if (f.weight != null) bits.push(`${r1(f.weight)} ${f.unit || settings.weightUnit}`);
+      if (f.timing) bits.push(f.timing);
+      break;
+    case 'bowel':
+      if (f.event === 'Symptoms only') bits.push('Symptoms only');
+      if (f.bristol) bits.push(`Bristol ${f.bristol} (${BRISTOL[f.bristol-1][2].toLowerCase()})`);
+      if (f.urgency && f.urgency !== 'None') bits.push('Urgency: ' + f.urgency.toLowerCase());
+      if (f.pain != null) bits.push(`pain ${f.pain}/10`);
+      if (arr(f.symptoms).length) bits.push(arr(f.symptoms).slice(0, 3).join(', '));
+      break;
+  }
+  return bits.join(' · ');
+}
+function detailText(e){
+  const f = e.f || {}, out = [];
+  for (const fd of CATS[e.cat].fields){
+    if (fd.t === 'nums' || fd.t === 'bpcat') continue;
+    const v = f[fd.k];
+    if (v == null || (Array.isArray(v) && !v.length) || v === '') continue;
+    out.push(`${fd.label}: ${Array.isArray(v) ? v.join(', ') : v}`);
+  }
+  return out.join('; ');
+}
+const actionText = a => [a.kind === 'med' ? '💊' : '✚', a.name, a.dose ? `(${a.dose})` : '', a.relief ? `– ${RELIEF.find(r => r[0] === a.relief)[1].toLowerCase()}${a.relief === 'some' || a.relief === 'good' || a.relief === 'full' ? ' relief' : ''}` : ''].filter(Boolean).join(' ');
+const actionPlain = a => `${a.kind === 'med' ? 'Med' : 'Action'}: ${a.name}${a.dose ? ' ' + a.dose : ''}${a.ts ? ' @' + a.ts.replace('T', ' ') : ''}${a.relief ? ' [' + RELIEF.find(r => r[0] === a.relief)[1] + (a.relief !== 'none' ? ' relief' : '') + ']' : ''}`;
+
+/* ---------- navigation ---------- */
+let view = 'log';
+function show(v){
+  view = v;
+  for (const k of ['log','history','reports','settings']) $('#view-' + k).classList.toggle('hidden', k !== v);
+  $$('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  render(); window.scrollTo(0, 0);
+}
+$('#tabbar').addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.v); });
+function render(){
+  if (view === 'log') renderLog();
+  else if (view === 'history') renderHistory();
+  else if (view === 'reports') renderReports();
+  else renderSettings();
+}
+
+/* ---------- log view ---------- */
+function entryCard(e){
+  const acts = (e.actions || []).filter(a => a.name);
+  return `<button class="entry" data-open="${e.id}">
+    <div class="em">${CATS[e.cat].emoji}</div>
+    <div class="body">
+      <div class="t"><b>${esc(CATS[e.cat].label)}</b><span>${esc(fmtTime(e.ts))}</span></div>
+      <div class="s">${esc(summary(e)) || '<span class="muted">No details</span>'}</div>
+      ${e.notes ? `<div class="s" style="font-style:italic">${esc(e.notes)}</div>` : ''}
+      ${acts.length ? `<div class="a">${acts.map(a => esc(actionText(a))).join('<br>')}</div>` : ''}
+    </div></button>`;
+}
+function renderLog(){
+  $('#today-date').textContent = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'});
+  $('#tiles').innerHTML = CAT_KEYS.map((k, i) => {
+    const last = entries.find(e => e.cat === k);
+    return `<button class="tile${i === 4 ? ' wide' : ''}" data-new="${k}">
+      <span class="em">${CATS[k].emoji}</span>
+      <span><b>${esc(CATS[k].label)}</b><br><span class="muted">${last ? 'Last: ' + esc(ago(last.ts)) : 'Tap to log'}</span></span>
+    </button>`;
+  }).join('');
+  const t = keyOf(todayNum());
+  const todays = entries.filter(e => e.ts.startsWith(t));
+  $('#today-list').innerHTML = todays.length ? todays.map(entryCard).join('') : '<div class="empty">Nothing logged today yet.<br>Tap a category above to add an entry.</div>';
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  const tip = $('#install-tip');
+  tip.classList.toggle('hidden', standalone);
+  if (!standalone) tip.innerHTML = installGuideHTML(false);
+}
+function installGuideHTML(compact){
+  const here = location.protocol.startsWith('http') && !/^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname) ? location.origin + location.pathname : '';
+  return `
+  <div class="intro">
+    <h2>${compact ? 'Install or share this app' : 'Get Health Aware on your iPhone'}</h2>
+    ${here ? `This app is online at <code>${esc(here)}</code>. Send that link to your iPhone (step 2), then add it to your Home Screen (step 3).`
+           : 'Three one-time steps: put the app online from your MacBook, send the link to your iPhone, then add it to the Home Screen. Only the app goes online — your health entries never leave the phone.'}
+    <div class="steps"><span>1 · Put online</span><span>2 · Send to iPhone</span><span>3 · Add to Home Screen</span></div>
+  </div>
+
+  <details><summary><span class="n">1</span>Put the app online (from your MacBook)</summary><div class="dbody">
+    <h4>Option A — Netlify Drop (easiest, free)</h4>
+    <ol><li>In Chrome, go to <code>app.netlify.com/drop</code> and create a free account.</li>
+      <li>In Finder, drag the whole <b>HealthAware</b> folder onto the page.</li>
+      <li>Copy the web address it gives you (like <code>https://calm-river-123.netlify.app</code>).</li>
+      <li>Optional: <b>Site configuration → Change site name</b> to something easy, e.g. <code>my-health-aware</code>.</li></ol>
+    <h4>Option B — GitHub Pages (free)</h4>
+    <ol><li>At <code>github.com</code>, create a new repository (e.g. <code>health-aware</code>).</li>
+      <li><b>Add file → Upload files</b>, drag in everything inside the HealthAware folder, then <b>Commit</b>.</li>
+      <li><b>Settings → Pages</b> → Source: <b>Deploy from a branch</b>, branch <b>main</b>, folder <b>/ (root)</b> → Save.</li>
+      <li>After a minute your address is <code>https://YOUR-NAME.github.io/health-aware/</code>.</li></ol>
+    <h4>Option C — Cloudflare Pages (free)</h4>
+    <ol><li>At <code>dash.cloudflare.com</code> go to <b>Workers &amp; Pages → Create → Pages → Upload assets</b>.</li>
+      <li>Name the project, drag in the HealthAware folder, and <b>Deploy</b>.</li></ol>
+    <div class="note">It must be an <b>https://</b> address — that is what lets the app work offline and install properly. Opening the file directly from AirDrop or Files on the iPhone will not work.</div>
+  </div></details>
+
+  <details><summary><span class="n">2</span>Send the link from your MacBook / Chrome to your iPhone</summary><div class="dbody">
+    <h4>QR code (quickest)</h4>
+    <ol><li>Open the app's address in Chrome on the Mac.</li>
+      <li>Right-click on the page → <b>Create QR Code for this page</b> (or click the share icon at the right end of the address bar → <b>Create QR code</b>).</li>
+      <li>Point the iPhone <b>Camera</b> at the screen and tap the link that pops up.</li></ol>
+    <h4>AirDrop</h4>
+    <ul><li>Chrome: <b>File → Share → AirDrop</b> and pick your iPhone.</li>
+      <li>Safari on Mac: <b>Share</b> button → <b>AirDrop</b>.</li>
+      <li>Your iPhone must be unlocked, with AirDrop set to Contacts Only or Everyone.</li></ul>
+    <h4>Chrome “Send to your devices”</h4>
+    <ul><li>If Chrome on the iPhone is signed in to the same Google account: right-click the page → <b>Send to your devices</b> → your iPhone, then tap the notification on the phone.</li>
+      <li>Then use the Chrome instructions in step 3, or copy the link into Safari.</li></ul>
+    <h4>Universal Clipboard (copy on Mac, paste on iPhone)</h4>
+    <ul><li>Select the address bar in Chrome and press <b>⌘C</b>.</li>
+      <li>On the iPhone, open Safari, tap the address bar and choose <b>Paste and Go</b>.</li>
+      <li>Needs the same Apple Account on both, with Wi-Fi, Bluetooth and Handoff on.</li></ul>
+    <h4>Messages, Mail or Notes</h4>
+    <ul><li>Text or email the link to yourself, or paste it into a note that syncs via iCloud, then tap it on the iPhone.</li></ul>
+  </div></details>
+
+  <details><summary><span class="n">3</span>Add it to your iPhone Home Screen</summary><div class="dbody">
+    <h4>In Safari (recommended)</h4>
+    <ol><li>Open the link in <b>Safari</b>.</li>
+      <li>Tap the <b>Share</b> button (square with an up-arrow; on newer iOS it may be under the <b>•••</b> menu).</li>
+      <li>Scroll down and tap <b>Add to Home Screen</b>. Leave <b>Open as Web App</b> on, then tap <b>Add</b>.</li></ol>
+    <h4>In Chrome on iPhone (iOS 16.4 or later)</h4>
+    <ol><li>Open the link, tap the <b>Share</b> icon in the address bar → <b>Add to Home Screen</b>.</li></ol>
+    <div class="note">Always open Health Aware from its <b>Home Screen icon</b>. The icon keeps its own data, separate from Safari tabs, so entries typed into a browser tab will not appear in the installed app.</div>
+  </div></details>
+
+  <details><summary><span class="n">+</span>Try it first over Wi-Fi (no upload)</summary><div class="dbody">
+    Handy for a quick look — not for real tracking.
+    <ol><li>On the Mac, open <b>Terminal</b>, type <code>cd </code> (with a space), drag the HealthAware folder into the window and press Return.</li>
+      <li>Run <code>python3 -m http.server 8000</code></li>
+      <li>Find the Mac's IP address: <b>System Settings → Wi-Fi → Details</b> (e.g. 192.168.1.20).</li>
+      <li>On the iPhone (same Wi-Fi), open Safari and go to <code>http://192.168.1.20:8000</code>.</li></ol>
+    <div class="note">In this mode the app does not work offline, and data is tied to that address, which can change. Use a step 1 option for everyday use.</div>
+  </div></details>
+
+  <details><summary><span class="n">+</span>Moving data and getting updates</summary><div class="dbody">
+    <h4>Move entries to another device</h4>
+    <ol><li>On the old device: <b>Settings → Save backup</b> and send the file with AirDrop, Mail or iCloud Drive.</li>
+      <li>On the new device: <b>Settings → Restore backup</b> and choose the file.</li></ol>
+    <h4>Install a new version</h4>
+    <ul><li>Upload the updated HealthAware folder to the same place (Netlify: drag it onto <b>Deploys</b> for your site; GitHub: upload and commit again).</li>
+      <li>On the iPhone, close and reopen the app once or twice to load the update. Your entries stay.</li></ul>
+  </div></details>`;
+}
+document.addEventListener('click', e => {
+  const n = e.target.closest('[data-new]'); if (n) return openEntry(n.dataset.new);
+  const o = e.target.closest('[data-open]'); if (o) return openEntry(null, o.dataset.open);
+});
+
+/* ---------- history ---------- */
+let histFilter = 'all';
+function renderHistory(){
+  $('#hist-filter').innerHTML = [['all', 'All']].concat(CAT_KEYS.map(k => [k, CATS[k].emoji + ' ' + CATS[k].label])).map(([k, l]) => `<button class="chip${histFilter === k ? ' on' : ''}" data-hf="${k}">${esc(l)}</button>`).join('');
+  const list = entries.filter(e => histFilter === 'all' || e.cat === histFilter);
+  if (!list.length){ $('#hist-list').innerHTML = '<div class="empty">No entries yet.</div>'; return; }
+  let html = '', cur = '', shown = 0;
+  for (const e of list){
+    if (shown++ > 400) { html += '<div class="empty">Showing the latest 400 entries. Use Trends → Share CSV for everything.</div>'; break; }
+    const d = e.ts.slice(0, 10);
+    if (d !== cur){ cur = d; html += `<div class="day">${esc(fmtDay(dayNum(d)))}</div>`; }
+    html += entryCard(e);
+  }
+  $('#hist-list').innerHTML = html;
+}
+$('#hist-filter').addEventListener('click', e => { const b = e.target.closest('[data-hf]'); if (b){ histFilter = b.dataset.hf; renderHistory(); } });
+
+/* ---------- entry sheet ---------- */
+let draft = null, draftIsNew = false;
+function openEntry(cat, id){
+  if (id){ draft = JSON.parse(JSON.stringify(entries.find(e => e.id === id))); draftIsNew = false; }
+  else { draft = {id:uid(), cat, ts:nowLocal(), f:{}, notes:'', actions:[]}; draftIsNew = true; if (cat === 'bowel') draft.f.event = 'Bowel movement'; }
+  draft.actions = draft.actions || [];
+  renderSheet();
+  const s = $('#sheet'); s.classList.remove('hidden'); s.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet(){ $('#sheet').classList.add('hidden'); document.body.style.overflow = ''; draft = null; }
+
+function fieldHTML(fd){
+  const f = draft.f, v = f[fd.k];
+  const lab = fd.label ? `<div class="flabel">${esc(fd.label)}</div>` : '';
+  switch (fd.t){
+    case 'scale':
+      return `<div class="field" data-k="${fd.k}" data-t="scale">${lab}
+        <div class="scale">${Array.from({length:11}, (_, i) => `<button type="button" class="${v === i ? 'on' : ''}" data-v="${i}" style="--h:${120 - i * 12}">${i}</button>`).join('')}</div>
+        <div class="hint" data-sevlbl>${v != null ? `${v}/10 · ${sevWord(v)}` : '0 = none · 10 = worst imaginable'}</div></div>`;
+    case 'choice': case 'multi':
+      return `<div class="field" data-k="${fd.k}" data-t="${fd.t}">${lab}<div class="chips">${fd.opts.map(o => `<button type="button" class="chip${arr(v).includes(o) ? ' on' : ''}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`;
+    case 'nums':
+      return `<div class="field"><div class="nums">${fd.items.map(it => {
+        const unit = it.unit === '@unit' ? (f.unit || settings.weightUnit) : it.unit;
+        return `<label>${esc(it.label)}${it.req ? ' <span class="req">*</span>' : ''}<input type="number" inputmode="decimal" data-num="${it.k}" step="${it.step || 1}" min="${it.min}" max="${it.max}" value="${f[it.k] ?? ''}" placeholder="–"><span class="muted" style="text-align:center">${esc(unit)}</span></label>`;
+      }).join('')}</div></div>`;
+    case 'bpcat':
+      return `<div class="field" id="bpcat">${bpCatHTML()}</div>`;
+    case 'bristol':
+      return `<div class="field" data-k="${fd.k}" data-t="bristol">${lab}<div class="bristol">${BRISTOL.map(([n, d, m]) => `<button type="button" class="${v === n ? 'on' : ''}" data-v="${n}"><b>${n}</b><span>${esc(d)}</span><small>${esc(m)}</small></button>`).join('')}</div></div>`;
+    case 'text':
+      return `<div class="field">${lab}<input type="text" data-txt="${fd.k}" value="${esc(v || '')}"></div>`;
+  }
+  return '';
+}
+function bpCatHTML(){
+  const c = bpCategory(draft.f.sys, draft.f.dia);
+  return c ? `<span class="bpcat"><span class="dot" style="background:${c.color}"></span>${esc(c.label)}${c.lvl === 4 ? ' — seek medical care if you have symptoms' : ''}</span>` : '<span class="hint">Category appears once both numbers are entered.</span>';
+}
+function quickPicks(){
+  const seen = new Map();
+  for (const m of settings.meds) seen.set(m.name.toLowerCase(), {...m});
+  for (const e of entries) if (e.cat === draft.cat) for (const a of e.actions || []) if (a.name && !seen.has(a.name.toLowerCase())) seen.set(a.name.toLowerCase(), {name:a.name, dose:a.dose, kind:a.kind});
+  return [...seen.values()].slice(0, 12);
+}
+function actionsHTML(){
+  const qp = quickPicks();
+  return draft.actions.map((a, i) => `
+    <div class="act" data-ai="${i}">
+      <div class="acthead">
+        <div class="seg"><button type="button" data-akind="med" class="${a.kind === 'med' ? 'on' : ''}">💊 Medication</button><button type="button" data-akind="action" class="${a.kind === 'action' ? 'on' : ''}">✚ Action</button></div>
+        <button type="button" class="linkbtn" data-adel style="color:var(--crit-ink);font-size:15px">Remove</button>
+      </div>
+      <input type="text" list="dl-names" data-af="name" value="${esc(a.name)}" placeholder="${a.kind === 'med' ? 'e.g. Ibuprofen, Sumatriptan' : 'e.g. Ice, heat, rest, stretching, water'}">
+      <div class="row2"><input type="text" data-af="dose" value="${esc(a.dose)}" placeholder="${a.kind === 'med' ? 'Dose (e.g. 400 mg)' : 'Amount / duration'}"><input type="datetime-local" data-af="ts" value="${esc(a.ts)}"></div>
+      <div class="flabel" style="margin:4px 0 0">Did it help?</div>
+      <div class="chips">${RELIEF.map(([k, l]) => `<button type="button" class="chip${(a.relief || '') === k ? ' on' : ''}" data-arelief="${k}">${l}</button>`).join('')}</div>
+    </div>`).join('') +
+    (qp.length ? `<div class="muted" style="margin:4px 0 6px">Quick add</div><div class="chips" style="margin-bottom:10px">${qp.map((m, i) => `<button type="button" class="chip" data-qp="${i}">${m.kind === 'med' ? '💊' : '✚'} ${esc(m.name)}${m.dose ? ' ' + esc(m.dose) : ''}</button>`).join('')}</div>` : '') +
+    `<div class="btnrow"><button type="button" class="btn sm" data-aadd="med">+ Medication</button><button type="button" class="btn sm" data-aadd="action">+ Action taken</button></div>`;
+}
+function renderSheet(){
+  const c = CATS[draft.cat];
+  $('#dl-names').innerHTML = [...new Set(settings.meds.map(m => m.name).concat(entries.flatMap(e => (e.actions || []).map(a => a.name)).filter(Boolean)))].map(n => `<option value="${esc(n)}">`).join('');
+  $('#sheet').innerHTML = `
+    <div class="sheet-head">
+      <button class="linkbtn" data-cancel>Cancel</button>
+      <h2>${c.emoji} ${esc(c.label)}</h2>
+      <button class="linkbtn strong" data-save>Save</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field"><div class="flabel">Date &amp; time</div>
+        <div style="display:flex;gap:8px"><input type="datetime-local" id="d-ts" value="${esc(draft.ts)}" style="flex:1"><button type="button" class="btn sm" data-now>Now</button></div></div>
+      ${c.fields.map(fieldHTML).join('')}
+      <div class="field"><div class="flabel">Notes</div><textarea id="d-notes" placeholder="Anything else worth telling your provider">${esc(draft.notes)}</textarea></div>
+      <div class="section-title" style="margin-left:0">Medications &amp; actions taken</div>
+      <div id="acts">${actionsHTML()}</div>
+      <button class="btn primary block" data-save style="margin-top:24px">Save entry</button>
+      ${draftIsNew ? '' : '<button class="btn danger block" data-del style="margin-top:10px">Delete entry</button>'}
+    </div>`;
+}
+function newAction(kind, base = {}){ return {id:uid(), kind, name:base.name || '', dose:base.dose || '', ts:draft.ts || nowLocal(), relief:''}; }
+const sheet = $('#sheet');
+sheet.addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('[data-cancel]')) return closeSheet();
+  if (t.closest('[data-save]')) return saveDraft();
+  if (t.closest('[data-del]')){ if (confirm('Delete this entry?')){ entries = entries.filter(x => x.id !== draft.id); saveEntries(); closeSheet(); render(); toast('Entry deleted'); } return; }
+  if (t.closest('[data-now]')){ draft.ts = nowLocal(); $('#d-ts').value = draft.ts; return; }
+  const fb = t.closest('.field[data-k] button');
+  if (fb){
+    const field = fb.closest('.field'), k = field.dataset.k, type = field.dataset.t;
+    if (type === 'scale' || type === 'bristol'){
+      const val = Number(fb.dataset.v);
+      draft.f[k] = draft.f[k] === val ? undefined : val;
+      $$('button', field).forEach(b => b.classList.toggle('on', Number(b.dataset.v) === draft.f[k]));
+      const lbl = $('[data-sevlbl]', field); if (lbl) lbl.textContent = draft.f[k] != null ? `${draft.f[k]}/10 · ${sevWord(draft.f[k])}` : '0 = none · 10 = worst imaginable';
+      if (k === 'bristol' && draft.f.event === 'Symptoms only' && draft.f[k] != null){ draft.f.event = 'Bowel movement'; renderSheetKeep(); }
+    } else if (type === 'choice'){
+      draft.f[k] = draft.f[k] === fb.dataset.v ? undefined : fb.dataset.v;
+      $$('button', field).forEach(b => b.classList.toggle('on', b.dataset.v === draft.f[k]));
+    } else {
+      const cur = arr(draft.f[k]), val = fb.dataset.v;
+      draft.f[k] = cur.includes(val) ? cur.filter(x => x !== val) : cur.concat(val);
+      fb.classList.toggle('on');
+    }
+    return;
+  }
+  const act = t.closest('.act'); const ai = act ? Number(act.dataset.ai) : -1;
+  if (t.closest('[data-akind]')){ draft.actions[ai].kind = t.closest('[data-akind]').dataset.akind; refreshActs(); return; }
+  if (t.closest('[data-adel]')){ draft.actions.splice(ai, 1); refreshActs(); return; }
+  if (t.closest('[data-arelief]') && ai >= 0){ draft.actions[ai].relief = t.closest('[data-arelief]').dataset.arelief; refreshActs(); return; }
+  if (t.closest('[data-aadd]')){ draft.actions.push(newAction(t.closest('[data-aadd]').dataset.aadd)); refreshActs(true); return; }
+  if (t.closest('[data-qp]')){ const m = quickPicks()[Number(t.closest('[data-qp]').dataset.qp)]; draft.actions.push(newAction(m.kind || 'med', m)); refreshActs(); return; }
+});
+function renderSheetKeep(){ const y = sheet.scrollTop; renderSheet(); sheet.scrollTop = y; }
+function refreshActs(focus){ $('#acts').innerHTML = actionsHTML(); if (focus){ const inputs = $$('#acts [data-af="name"]'); inputs[inputs.length - 1]?.focus(); } }
+sheet.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'd-ts'){ draft.ts = t.value; return; }
+  if (t.id === 'd-notes'){ draft.notes = t.value; return; }
+  if (t.dataset.num){ draft.f[t.dataset.num] = num(parseFloat(t.value)); if (draft.cat === 'bp') $('#bpcat').innerHTML = bpCatHTML(); return; }
+  if (t.dataset.txt){ draft.f[t.dataset.txt] = t.value; return; }
+  if (t.dataset.af){ const ai = Number(t.closest('.act').dataset.ai); draft.actions[ai][t.dataset.af] = t.value; }
+});
+function saveDraft(){
+  if (!draft.ts){ alert('Please enter a date and time.'); return; }
+  const f = draft.f;
+  if (draft.cat === 'bp'){
+    if (f.sys == null || f.dia == null){ alert('Please enter both systolic and diastolic readings.'); return; }
+    if (f.dia >= f.sys){ if (!confirm('Diastolic is higher than systolic — save anyway?')) return; }
+  }
+  if (draft.cat === 'weight'){
+    if (f.weight == null){ alert('Please enter your weight.'); return; }
+    f.unit = f.unit || settings.weightUnit;
+  }
+  for (const k in f) if (f[k] == null || (Array.isArray(f[k]) && !f[k].length) || f[k] === '') delete f[k];
+  draft.actions = draft.actions.filter(a => a.name && a.name.trim()).map(a => ({...a, name:a.name.trim()}));
+  draft.updated = new Date().toISOString();
+  const i = entries.findIndex(x => x.id === draft.id);
+  if (i >= 0) entries[i] = draft; else { draft.created = draft.updated; entries.push(draft); }
+  sortEntries(); saveEntries();
+  const wasNew = draftIsNew;
+  closeSheet(); render(); toast(wasNew ? 'Saved' : 'Updated');
+}
+
+/* ---------- analysis ---------- */
+let range = localStorageGet('ha.range') || '30';
+function localStorageGet(k){ try { return localStorage.getItem(k); } catch { return null; } }
+function bounds(){
+  const to = todayNum();
+  if (range === 'all'){ const first = entries.length ? dayNum(entries[entries.length - 1].ts) : to; return {from:Math.min(first, to - 6), to}; }
+  return {from: to - Number(range) + 1, to};
+}
+const inB = (e, b) => { const d = dayNum(e.ts); return d >= b.from && d <= b.to; };
+function daily(list, fn){
+  const m = new Map();
+  for (const e of list){ const v = fn(e); if (v == null || isNaN(v)) continue; const d = dayNum(e.ts); const o = m.get(d) || {s:0, n:0, max:-Infinity}; o.s += v; o.n++; o.max = Math.max(o.max, v); m.set(d, o); }
+  return [...m].map(([x, o]) => ({x, v:o.s / o.n, max:o.max, n:o.n})).sort((a, b) => a.x - b.x);
+}
+function linreg(pts){
+  if (pts.length < 2) return null;
+  const x0 = pts[0].x; let sx = 0, sy = 0, sxx = 0, sxy = 0; const n = pts.length;
+  for (const p of pts){ const x = p.x - x0; sx += x; sy += p.v; sxx += x * x; sxy += x * p.v; }
+  const den = n * sxx - sx * sx; if (!den) return null;
+  const m = (n * sxy - sx * sy) / den, b = (sy - m * sx) / n;
+  return {m, at: x => b + m * (x - x0)};
+}
+const mean = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+function topCounts(list, k, n = 3){
+  const c = {}; for (const e of list) for (const v of arr(e.f[k])) c[v] = (c[v] || 0) + 1;
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n);
+}
+const topStr = t => t.map(([k, n]) => `${k} (${n})`).join(', ');
+// dir: -1 improving, 0 stable, 1 worsening
+function judge(delta, thr, lowerBetter){ if (delta == null || Math.abs(delta) < thr) return 0; return (delta < 0) === lowerBetter ? -1 : 1; }
+function combine(scores, enough){
+  if (!enough) return 'insufficient';
+  const nz = scores.filter(s => s);
+  if (!nz.length) return 'stable';
+  if (nz.every(s => s < 0)) return 'improving';
+  if (nz.every(s => s > 0)) return 'worsening';
+  return 'mixed';
+}
+const STATUS = {
+  improving:   {label:'Improving',  icon:'✓', color:'var(--good)'},
+  worsening:   {label:'Worsening',  icon:'!', color:'var(--crit)'},
+  stable:      {label:'Stable',     icon:'=', color:'var(--muted)'},
+  mixed:       {label:'Mixed',      icon:'~', color:'var(--warn)'},
+  insufficient:{label:'Not enough data', icon:'…', color:'var(--muted)'},
+  none:        {label:'None logged', icon:'✓', color:'var(--good)'},
+};
+const statusHTML = s => `<span class="status"><i style="background:${STATUS[s].color}">${STATUS[s].icon}</i>${STATUS[s].label}</span>`;
+const arrowTxt = (delta, digits = 1, unit = '') => delta == null ? '—' : `${delta > 0 ? '+' : delta < 0 ? '−' : '±'}${Math.abs(delta).toFixed(digits)}${unit}`;
+function halves(list, b){ const mid = b.from + (b.to - b.from + 1) / 2; return [list.filter(e => dayNum(e.ts) < mid), list.filter(e => dayNum(e.ts) >= mid)]; }
+function trendDelta(pts){ const lr = linreg(pts); if (!lr) return null; return lr.at(pts[pts.length - 1].x) - lr.at(pts[0].x); }
+
+function analyze(cat, b){
+  const list = entries.filter(e => e.cat === cat && inB(e, b));
+  const days = b.to - b.from + 1;
+  const [h1, h2] = halves(list, b);
+  const R = {cat, n:list.length, stats:[], facts:[], charts:[], status:'insufficient', list};
+  const meds = list.flatMap(e => e.actions || []);
+  if (cat === 'headache' || cat === 'pain'){
+    const pts = daily(list, e => e.f.severity);
+    const sev = list.map(e => e.f.severity).filter(v => v != null);
+    const dSev = pts.length >= 3 ? trendDelta(pts) : null;
+    const fr = h2.length - h1.length;
+    const freqScore = (Math.abs(fr) >= 2 && Math.abs(fr) >= 0.25 * Math.max(h1.length, h2.length)) ? Math.sign(fr) : 0;
+    const epDays = new Set(list.map(e => dayNum(e.ts))).size;
+    R.status = list.length === 0 ? 'none' : combine([judge(dSev, 1, true), freqScore], list.length >= 3);
+    R.stats = [
+      {l:'Episodes', v:list.length, d:`${h1.length} → ${h2.length} (1st vs 2nd half)`},
+      {l:'Days affected', v:`${epDays}/${days}`, d:`${Math.round(epDays / days * 100)}% of days`},
+      {l:'Avg severity', v:sev.length ? r1(mean(sev)) : '—', d:`Trend ${arrowTxt(dSev)} pts`},
+      {l:'Worst', v:sev.length ? Math.max(...sev) + '/10' : '—'},
+    ];
+    if (cat === 'headache'){
+      const dur = list.map(e => e.f.duration).filter(v => v != null);
+      if (dur.length) R.stats.push({l:'Avg duration', v:r1(mean(dur)) + ' h'});
+      [['type', 'Types'], ['location', 'Locations'], ['quality', 'Characteristics'], ['symptoms', 'Symptoms'], ['triggers', 'Triggers']].forEach(([k, l]) => { const t = topCounts(list, k); if (t.length) R.facts.push(`${l}: ${topStr(t)}`); });
+    } else {
+      [['area', 'Areas'], ['quality', 'Characteristics'], ['pattern', 'Pattern'], ['triggers', 'Triggers'], ['impact', 'Activity impact']].forEach(([k, l]) => { const t = topCounts(list, k); if (t.length) R.facts.push(`${l}: ${topStr(t)}`); });
+    }
+    R.charts.push({title:'Severity by day (daily average, 0–10)', series:[{name:'Severity', color:'var(--s1)', pts}], yMin:0, yMax:10, unit:'/10', trend:true});
+  }
+  if (cat === 'bp'){
+    const S = daily(list, e => e.f.sys), D = daily(list, e => e.f.dia), P = daily(list, e => e.f.pulse);
+    const sys = list.map(e => e.f.sys).filter(v => v != null), dia = list.map(e => e.f.dia).filter(v => v != null), pul = list.map(e => e.f.pulse).filter(v => v != null);
+    const dS = S.length >= 3 ? trendDelta(S) : null, dD = D.length >= 3 ? trendDelta(D) : null;
+    const aS = mean(sys), aD = mean(dia);
+    const cat_ = aS != null ? bpCategory(Math.round(aS), Math.round(aD)) : null;
+    // Lower is better while above normal; inside the normal range small drifts count as stable.
+    const inNormal = aS != null && aS < 120 && aD < 80;
+    R.status = list.length === 0 ? 'insufficient' : combine(inNormal ? [0] : [judge(dS, 5, true), judge(dD, 4, true)], S.length >= 3);
+    const high = list.filter(e => e.f.sys >= 130 || e.f.dia >= 80).length;
+    const latest = list[0];
+    R.stats = [
+      {l:'Average', v:aS != null ? `${Math.round(aS)}/${Math.round(aD)}` : '—', d:cat_ ? cat_.label : ''},
+      {l:'Trend (sys/dia)', v:dS != null ? `${arrowTxt(dS, 0)}/${arrowTxt(dD, 0)}` : '—', d:'mmHg over period'},
+      {l:'Readings', v:list.length, d:list.length ? `${Math.round(high / list.length * 100)}% ≥130/80` : ''},
+      {l:'Avg pulse', v:pul.length ? Math.round(mean(pul)) : '—', d:'bpm'},
+    ];
+    if (latest) R.facts.push(`Latest: ${latest.f.sys}/${latest.f.dia}${latest.f.pulse ? ' pulse ' + latest.f.pulse : ''} on ${fmtLong(dayNum(latest.ts))} ${fmtTime(latest.ts)}`);
+    if (sys.length) R.facts.push(`Range: systolic ${Math.min(...sys)}–${Math.max(...sys)}, diastolic ${Math.min(...dia)}–${Math.max(...dia)}`);
+    const am = list.filter(e => e.f.timing === 'Morning'), pm = list.filter(e => e.f.timing === 'Evening' || e.f.timing === 'Bedtime');
+    if (am.length && pm.length) R.facts.push(`Morning avg ${Math.round(mean(am.map(e => e.f.sys)))}/${Math.round(mean(am.map(e => e.f.dia)))} vs evening ${Math.round(mean(pm.map(e => e.f.sys)))}/${Math.round(mean(pm.map(e => e.f.dia)))}`);
+    const sy = topCounts(list.map(e => ({f:{s:arr(e.f.symptoms).filter(x => x !== 'None')}})), 's'); if (sy.length) R.facts.push(`Symptoms: ${topStr(sy)}`);
+    const allV = sys.concat(dia);
+    const lo = allV.length ? Math.floor((Math.min(...allV, 80) - 10) / 10) * 10 : 60, hi = allV.length ? Math.ceil((Math.max(...allV, 130) + 10) / 10) * 10 : 160;
+    R.charts.push({title:'Blood pressure by day (daily average, mmHg)', series:[{name:'Systolic', short:'Sys', color:'var(--s1)', pts:S}, {name:'Diastolic', short:'Dia', color:'var(--s2)', pts:D}], yMin:lo, yMax:hi, unit:'', trend:true, refs:[{v:130, label:'130'}, {v:80, label:'80'}]});
+    if (P.length >= 2) R.charts.push({title:'Pulse by day (bpm)', series:[{name:'Pulse', color:'var(--s1)', pts:P}], yMin:Math.floor((Math.min(...pul) - 10) / 10) * 10, yMax:Math.ceil((Math.max(...pul) + 10) / 10) * 10, trend:false});
+  }
+  if (cat === 'weight'){
+    const W = daily(list, e => toUnit(e.f.weight, e.f.unit));
+    const u = settings.weightUnit;
+    const dW = W.length >= 3 ? trendDelta(W) : null;
+    const avg = mean(W.map(p => p.v));
+    const goal = settings.weightGoal;
+    let s = judge(dW, avg ? avg * 0.01 : 1, goal !== 'gain');
+    if (goal === 'maintain' && s) s = 1; // any meaningful change is moving away from the goal
+    R.status = W.length ? combine([s], W.length >= 3) : 'insufficient';
+    const first = W[0], last = W[W.length - 1];
+    R.stats = [
+      {l:'Latest', v:last ? `${r1(last.v)} ${u}` : '—', d:last ? fmtLong(last.x) : ''},
+      {l:'Change', v:first && last ? arrowTxt(last.v - first.v, 1, ' ' + u) : '—', d:first ? 'since ' + fmtShort(first.x) : ''},
+      {l:'Average', v:avg ? `${r1(avg)} ${u}` : '—'},
+      {l:'Weigh-ins', v:list.length, d:`Goal: ${goal}`},
+    ];
+    if (W.length){
+      const lo = Math.min(...W.map(p => p.v)), hi = Math.max(...W.map(p => p.v)), padv = Math.max(2, (hi - lo) * 0.2);
+      R.charts.push({title:`Weight by day (${u})`, series:[{name:'Weight', color:'var(--s1)', pts:W}], yMin:Math.floor(lo - padv), yMax:Math.ceil(hi + padv), unit:' ' + u, trend:true});
+    }
+  }
+  if (cat === 'bowel'){
+    const bm = list.filter(e => e.f.event !== 'Symptoms only');
+    const br = list.map(e => e.f.bristol).filter(v => v != null);
+    const normal = v => v >= 3 && v <= 4;
+    const pctN = l => { const v = l.map(e => e.f.bristol).filter(x => x != null); return v.length ? v.filter(normal).length / v.length * 100 : null; };
+    const p1 = pctN(h1), p2 = pctN(h2);
+    const P = daily(list, e => e.f.pain), B = daily(list, e => e.f.bristol);
+    const dP = P.length >= 3 ? trendDelta(P) : null;
+    const urg = list.filter(e => e.f.urgency && e.f.urgency !== 'None');
+    const u1 = h1.filter(e => e.f.urgency && e.f.urgency !== 'None').length, u2 = h2.filter(e => e.f.urgency && e.f.urgency !== 'None').length;
+    const sN = (p1 != null && p2 != null && Math.abs(p2 - p1) >= 15) ? (p2 > p1 ? -1 : 1) : 0;
+    const sU = (Math.abs(u2 - u1) >= 2 && Math.abs(u2 - u1) >= 0.25 * Math.max(u1, u2)) ? Math.sign(u2 - u1) : 0;
+    R.status = list.length ? combine([judge(dP, 1, true), sN, sU], list.length >= 3) : 'insufficient';
+    const bmDays = new Set(bm.map(e => dayNum(e.ts))).size;
+    R.stats = [
+      {l:'Bowel movements', v:bm.length, d:`${r1(bm.length / days)} per day`},
+      {l:'Normal (Bristol 3–4)', v:br.length ? Math.round(br.filter(normal).length / br.length * 100) + '%' : '—', d:p1 != null && p2 != null ? `${Math.round(p1)}% → ${Math.round(p2)}%` : ''},
+      {l:'Avg abdominal pain', v:P.length ? r1(mean(list.map(e => e.f.pain).filter(v => v != null))) : '—', d:`Trend ${arrowTxt(dP)} pts`},
+      {l:'Urgency episodes', v:urg.length, d:`${u1} → ${u2} (1st vs 2nd half)`},
+    ];
+    if (br.length){ const lo = br.filter(v => v <= 2).length, hi = br.filter(v => v >= 5).length; R.facts.push(`Stool types: ${lo} hard (1–2), ${br.filter(normal).length} normal (3–4), ${hi} loose (5–7)`); }
+    R.facts.push(`Days with a bowel movement: ${bmDays} of ${days}`);
+    [['symptoms', 'Symptoms'], ['triggers', 'Triggers']].forEach(([k, l]) => { const t = topCounts(list, k); if (t.length) R.facts.push(`${l}: ${topStr(t)}`); });
+    if (list.some(e => arr(e.f.symptoms).includes('Blood'))) R.facts.push('⚠︎ Blood reported in at least one entry — mention to your provider.');
+    R.charts.push({title:'Stool type by day (Bristol 1–7, shaded = normal)', series:[{name:'Bristol', color:'var(--s1)', pts:B}], yMin:1, yMax:7, band:[3, 4], trend:false});
+    if (P.length) R.charts.push({title:'Abdominal pain by day (0–10)', series:[{name:'Pain', color:'var(--s1)', pts:P}], yMin:0, yMax:10, unit:'/10', trend:true});
+  }
+  // medication / action effectiveness for this category
+  const mm = {};
+  for (const a of meds){
+    const k = a.name.toLowerCase(); const o = mm[k] || (mm[k] = {name:a.name, kind:a.kind, n:0, scores:[], doses:new Set()});
+    o.n++; if (a.relief in RELIEF_SCORE) o.scores.push(RELIEF_SCORE[a.relief]); if (a.dose) o.doses.add(a.dose);
+  }
+  R.meds = Object.values(mm).sort((a, b) => b.n - a.n);
+  return R;
+}
+const reliefLabel = scores => { if (!scores.length) return '—'; const m = mean(scores); return `${['None', 'Some', 'Good', 'Complete'][Math.round(m)]} (${scores.length} rated)`; };
+
+/* ---------- charts ---------- */
+const CH = {};
+function niceTicks(lo, hi, n = 4){
+  const raw = (hi - lo) / n, mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const step = [1, 2, 2.5, 5, 10].map(s => s * mag).find(s => s >= raw) || mag * 10;
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
+  return out;
+}
+function lineChart(c, b, id){
+  const W = 340, H = 168, L = 30, R = c.series.length > 1 ? 30 : 12, T = 10, B = 22;
+  const pw = W - L - R, ph = H - T - B, span = Math.max(1, b.to - b.from);
+  const X = x => L + (x - b.from) / span * pw, Y = v => T + (1 - (v - c.yMin) / (c.yMax - c.yMin)) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(c.title)}" data-chart="${id}" font-family="system-ui,-apple-system,sans-serif">`;
+  if (c.band) s += `<rect x="${L}" y="${Y(c.band[1] + 0.5)}" width="${pw}" height="${Y(c.band[0] - 0.5) - Y(c.band[1] + 0.5)}" fill="var(--band,rgba(12,163,12,.1))"/>`;
+  for (const t of niceTicks(c.yMin, c.yMax, 4)){
+    s += `<line x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line,#e1e0d9)" stroke-width="1"/>`;
+    s += `<text x="${L - 6}" y="${Y(t) + 3.5}" text-anchor="end" font-size="10" fill="var(--muted,#898781)">${t}</text>`;
+  }
+  for (const r of c.refs || []) s += `<line x1="${L}" x2="${W - R}" y1="${Y(r.v)}" y2="${Y(r.v)}" stroke="var(--axis,#c3c2b7)" stroke-dasharray="3 3"/>`;
+  s += `<line x1="${L}" x2="${W - R}" y1="${T + ph}" y2="${T + ph}" stroke="var(--axis,#c3c2b7)"/>`;
+  const xt = span <= 7 ? Array.from({length:span + 1}, (_, i) => b.from + i) : [b.from, b.from + Math.round(span / 2), b.to];
+  xt.forEach((x, i) => s += `<text x="${X(x)}" y="${H - 6}" text-anchor="${xt.length > 3 ? 'middle' : i === 0 ? 'start' : i === xt.length - 1 ? 'end' : 'middle'}" font-size="10" fill="var(--muted,#898781)">${fmtShort(x)}</text>`);
+  const empty = c.series.every(se => !se.pts.length);
+  if (empty) s += `<text x="${L + pw / 2}" y="${T + ph / 2}" text-anchor="middle" font-size="12" fill="var(--muted,#898781)">No readings in this period</text>`;
+  const many = c.series.reduce((m, se) => Math.max(m, se.pts.length), 0) > 45;
+  for (const se of c.series){
+    if (!se.pts.length) continue;
+    if (c.trend && se.pts.length >= 3){
+      const lr = linreg(se.pts), x1 = se.pts[0].x, x2 = se.pts[se.pts.length - 1].x;
+      if (lr) s += `<line x1="${X(x1)}" y1="${Y(lr.at(x1))}" x2="${X(x2)}" y2="${Y(lr.at(x2))}" stroke="${se.color}" stroke-width="1.5" stroke-dasharray="5 4" opacity=".55"/>`;
+    }
+    if (se.pts.length > 1) s += `<path d="${se.pts.map((p, i) => (i ? 'L' : 'M') + X(p.x).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join('')}" fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    for (const p of se.pts) s += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${many ? 2.5 : 4}" fill="${se.color}" stroke="var(--card,#fff)" stroke-width="${many ? 1 : 2}"/>`;
+    if (c.series.length > 1){ const lp = se.pts[se.pts.length - 1]; s += `<text x="${X(lp.x) + 7}" y="${Y(lp.v) + 3.5}" font-size="10" font-weight="600" fill="var(--ink2,#52514e)">${esc(se.short || se.name)}</text>`; }
+  }
+  s += `<line class="xh" x1="0" x2="0" y1="${T}" y2="${T + ph}" stroke="var(--muted,#898781)" stroke-width="1" visibility="hidden"/>`;
+  s += `<rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent" class="hit"/></svg>`;
+  CH[id] = {c, b, W, L, pw, span};
+  const legend = c.series.length > 1 ? c.series.map(se => `<span class="legend"><span class="sw" style="background:${se.color}"></span>${esc(se.name)}</span>`).join('') : '';
+  const trendKey = c.trend && c.series.some(se => se.pts.length >= 3) ? '<span class="legend"><span class="sw" style="background:repeating-linear-gradient(90deg,var(--muted,#898781) 0 4px,transparent 4px 7px)"></span>trend</span>' : '';
+  return `<div class="chart" data-cid="${id}"><div class="ct"><span>${esc(c.title)}</span>${legend}${trendKey}</div>${s}</div>`;
+}
+function chartMove(ev){
+  const svg = ev.target.closest && ev.target.closest('svg[data-chart]'); if (!svg) return;
+  const meta = CH[svg.dataset.chart]; if (!meta) return;
+  const rect = svg.getBoundingClientRect();
+  const vx = (ev.clientX - rect.left) / rect.width * meta.W;
+  const dx = meta.b.from + (vx - meta.L) / meta.pw * meta.span;
+  let best = null;
+  for (const se of meta.c.series) for (const p of se.pts) if (!best || Math.abs(p.x - dx) < Math.abs(best - dx)) best = p.x;
+  const wrap = svg.parentElement; let tip = $('.tip', wrap);
+  if (best == null){ tip && tip.remove(); return; }
+  const px = meta.L + (best - meta.b.from) / meta.span * meta.pw;
+  const xh = $('.xh', svg); xh.setAttribute('x1', px); xh.setAttribute('x2', px); xh.setAttribute('visibility', 'visible');
+  if (!tip){ tip = document.createElement('div'); tip.className = 'tip'; wrap.appendChild(tip); }
+  const rows = meta.c.series.map(se => { const p = se.pts.find(q => q.x === best); return p ? `${esc(se.name)}: <b style="display:inline">${r1(p.v)}${esc(meta.c.unit || '')}</b>${p.n > 1 ? ` <span style="color:var(--muted)">(avg of ${p.n})</span>` : ''}` : ''; }).filter(Boolean);
+  tip.innerHTML = `<b>${esc(fmtDay(best))}</b>${rows.join('<br>')}`;
+  const left = px / meta.W * rect.width, tw = tip.offsetWidth || 120;
+  tip.style.left = Math.min(Math.max(left, tw / 2), rect.width - tw / 2) + 'px';
+  tip.style.top = (svg.offsetTop - 4 - (tip.offsetHeight || 40)) + 'px';
+}
+function chartLeave(ev){
+  const svg = ev.target.closest && ev.target.closest('svg[data-chart]'); if (!svg) return;
+  $('.xh', svg)?.setAttribute('visibility', 'hidden'); $('.tip', svg.parentElement)?.remove();
+}
+document.addEventListener('pointermove', chartMove);
+document.addEventListener('pointerdown', chartMove);
+document.addEventListener('pointerleave', chartLeave, true);
+document.addEventListener('pointercancel', chartLeave, true);
+
+/* ---------- reports view ---------- */
+function rangeText(b){ return `${fmtLong(b.from)} – ${fmtLong(b.to)} (${b.to - b.from + 1} days)`; }
+function medTable(meds){
+  if (!meds.length) return '';
+  return `<table style="margin-top:10px"><thead><tr><th>Medication / action</th><th class="n">Times</th><th>Typical relief</th></tr></thead><tbody>${meds.map(m => `<tr><td>${m.kind === 'med' ? '💊' : '✚'} ${esc(m.name)}${m.doses.size ? ` <span style="color:var(--muted)">${esc([...m.doses].slice(0, 2).join(', '))}</span>` : ''}</td><td class="n">${m.n}</td><td>${esc(reliefLabel(m.scores))}</td></tr>`).join('')}</tbody></table>`;
+}
+function renderReports(){
+  $$('#range-seg button').forEach(x => x.classList.toggle('on', x.dataset.r === range));
+  const b = bounds();
+  $('#range-label').textContent = rangeText(b);
+  let html = '', ci = 0;
+  for (const k of CAT_KEYS){
+    const R = analyze(k, b);
+    html += `<div class="card">
+      <div class="rhead"><h2 style="margin:0">${CATS[k].emoji} ${esc(CATS[k].label)}</h2>${statusHTML(R.status)}</div>
+      <div class="stats">${R.stats.map(s => `<div class="stat"><div class="v">${esc(s.v)}</div><div class="l">${esc(s.l)}</div>${s.d ? `<div class="d">${esc(s.d)}</div>` : ''}</div>`).join('')}</div>
+      ${R.n ? R.charts.map(c => lineChart(c, b, 'c' + (ci++))).join('') : '<div class="muted">No entries in this period.</div>'}
+      ${R.facts.length ? `<ul class="facts">${R.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+      ${medTable(R.meds)}
+    </div>`;
+  }
+  html += `<div class="muted" style="margin:6px 4px 0">How trends are judged: severity uses a best-fit line through daily averages (change ≥1 point); frequency compares the first and second half of the period (change ≥25%); blood pressure change ≥5/4 mmHg; weight change ≥1% relative to your goal. Tap or drag on a chart to see values.</div>`;
+  $('#report-cards').innerHTML = html;
+}
+$('#range-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; range = b.dataset.r; try { localStorage.setItem('ha.range', range); } catch {} renderReports(); });
+
+/* ---------- provider report ---------- */
+function reportBody(){
+  const b = bounds();
+  const who = [settings.name && `<b>${esc(settings.name)}</b>`, settings.dob && `DOB ${esc(settings.dob)}`].filter(Boolean).join(' · ');
+  let html = `<div class="rp-h"><div><h1>Health Tracking Report</h1><div>${who || ''}</div>${settings.provider ? `<div>Prepared for: ${esc(settings.provider)}</div>` : ''}</div>
+    <div class="meta">Period: ${esc(rangeText(b))}<br>Generated ${esc(new Date().toLocaleString())}</div></div>`;
+  html += '<div class="rp-sec"><h2>Summary</h2><table><thead><tr><th>Area</th><th>Trend</th><th>Key figures</th></tr></thead><tbody>';
+  const results = CAT_KEYS.map(k => analyze(k, b));
+  for (const R of results) html += `<tr><td>${esc(CATS[R.cat].label)}</td><td>${statusHTML(R.status)}</td><td>${R.stats.map(s => `${esc(s.l)}: <b>${esc(s.v)}</b>${s.d ? ` <span style="color:#6f6e69">(${esc(s.d)})</span>` : ''}`).join('<br>')}</td></tr>`;
+  html += '</tbody></table></div>';
+  let ci = 0;
+  for (const R of results){
+    if (!R.n) continue;
+    html += `<div class="rp-sec"><h2><span>${esc(CATS[R.cat].label)}</span>${statusHTML(R.status)}</h2><div class="rp-grid"><div>${R.charts.map(c => lineChart(c, b, 'p' + (ci++))).join('')}</div><div>
+      ${R.facts.length ? `<ul>${R.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}${medTable(R.meds)}</div></div></div>`;
+  }
+  const list = entries.filter(e => inB(e, b)).slice().reverse();
+  html += `<div class="rp-log"><h2>Entry log (${list.length})</h2><table><thead><tr><th>Date / time</th><th>Area</th><th>Reading / details</th><th>Meds &amp; actions</th></tr></thead><tbody>${
+    list.map(e => `<tr><td style="white-space:nowrap">${esc(fmtShort(dayNum(e.ts)))} ${esc(fmtTime(e.ts))}</td><td>${esc(CATS[e.cat].label)}</td><td>${esc(summary(e))}${detailText(e) ? `<br><span style="color:#6f6e69">${esc(detailText(e))}</span>` : ''}${e.notes ? `<br><i>${esc(e.notes)}</i>` : ''}</td><td>${(e.actions || []).map(a => esc(actionPlain(a))).join('<br>')}</td></tr>`).join('')
+  }</tbody></table></div>`;
+  html += `<div class="rp-note">Self-reported data from the Health Aware app. Trend method: best-fit line through daily averages and first-half vs second-half comparison of the selected period. BP categories follow ACC/AHA 2017 guidelines.</div>`;
+  return html;
+}
+function reportFileHTML(){
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Health Report${settings.name ? ' – ' + esc(settings.name) : ''}</title><style>body{margin:0;background:#fff}${$('#report-css').textContent}</style></head><body><div class="report-doc">${reportBody()}</div></body></html>`;
+}
+$('#btn-print').addEventListener('click', () => {
+  $('#print-root').innerHTML = `<div class="report-doc">${reportBody()}</div>`;
+  setTimeout(() => window.print(), 50);
+});
+$('#btn-share-report').addEventListener('click', () => shareFile(`health-report-${keyOf(todayNum())}.html`, 'text/html', reportFileHTML(), 'Health report'));
+$('#btn-csv').addEventListener('click', () => shareFile(`health-data-${keyOf(todayNum())}.csv`, 'text/csv', toCSV(entries.filter(e => inB(e, bounds()))), 'Health data'));
+$('#btn-email').addEventListener('click', () => {
+  const b = bounds();
+  let t = `Health tracking summary${settings.name ? ' for ' + settings.name : ''}\nPeriod: ${rangeText(b)}\n\n`;
+  for (const k of CAT_KEYS){
+    const R = analyze(k, b);
+    t += `${CATS[k].label.toUpperCase()} — ${STATUS[R.status].label}\n` + R.stats.map(s => `  ${s.l}: ${s.v}${s.d ? ' (' + s.d + ')' : ''}`).join('\n') + '\n';
+    if (R.meds.length) t += '  Meds/actions: ' + R.meds.map(m => `${m.name} x${m.n}${m.scores.length ? ', relief ' + reliefLabel(m.scores) : ''}`).join('; ') + '\n';
+    t += '\n';
+  }
+  t += 'Full report and data attached separately (PDF/CSV) if requested.';
+  location.href = `mailto:${encodeURIComponent(settings.providerEmail || '')}?subject=${encodeURIComponent('Health tracking summary')}&body=${encodeURIComponent(t)}`;
+});
+function csvCell(v){ v = String(v ?? ''); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; }
+function toCSV(list){
+  const head = ['date', 'time', 'category', 'severity_0_10', 'systolic', 'diastolic', 'pulse', 'bp_category', 'weight', 'weight_unit', 'bristol', 'urgency', 'abdominal_pain_0_10', 'duration_hours', 'details', 'notes', 'medications_actions'];
+  const rows = list.slice().reverse().map(e => {
+    const f = e.f, c = bpCategory(f.sys, f.dia);
+    return [e.ts.slice(0, 10), e.ts.slice(11, 16), CATS[e.cat].label, f.severity, f.sys, f.dia, f.pulse, c && e.cat === 'bp' ? c.label : '', f.weight, f.weight != null ? (f.unit || settings.weightUnit) : '', f.bristol, f.urgency, f.pain, f.duration, detailText(e), e.notes, (e.actions || []).map(actionPlain).join(' | ')].map(csvCell).join(',');
+  });
+  return '﻿' + head.join(',') + '\n' + rows.join('\n');
+}
+async function shareFile(name, type, text, title){
+  const file = new File([text], name, {type});
+  if (navigator.canShare && navigator.canShare({files:[file]})){
+    try { await navigator.share({files:[file], title}); return true; }
+    catch (e) { if (e.name === 'AbortError') return false; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return true;
+}
+
+/* ---------- settings ---------- */
+function renderSettings(){
+  $('#s-name').value = settings.name; $('#s-dob').value = settings.dob; $('#s-provider').value = settings.provider; $('#s-email').value = settings.providerEmail;
+  $$('#s-unit button').forEach(b => b.classList.toggle('on', b.dataset.v === settings.weightUnit));
+  $$('#s-goal button').forEach(b => b.classList.toggle('on', b.dataset.v === settings.weightGoal));
+  $('#med-list').innerHTML = settings.meds.length ? settings.meds.map((m, i) => `<div class="medrow"><span>${m.kind === 'med' ? '💊' : '✚'} ${esc(m.name)} <span class="muted">${esc(m.dose || '')}</span></span><button class="linkbtn" style="font-size:15px;color:var(--crit-ink)" data-mdel="${i}">Remove</button></div>`).join('') : '<div class="muted">None added yet.</div>';
+  $('#install-guide-settings').innerHTML = installGuideHTML(true);
+  $('#backup-info').textContent = `${entries.length} entries stored. ` + (settings.lastBackup ? `Last backup ${new Date(settings.lastBackup).toLocaleDateString()}.` : 'No backup saved yet.');
+}
+[['s-name', 'name'], ['s-dob', 'dob'], ['s-provider', 'provider'], ['s-email', 'providerEmail']].forEach(([id, k]) => $('#' + id).addEventListener('input', e => { settings[k] = e.target.value; saveSettings(); }));
+$('#s-unit').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ settings.weightUnit = b.dataset.v; saveSettings(); renderSettings(); } });
+$('#s-goal').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ settings.weightGoal = b.dataset.v; saveSettings(); renderSettings(); } });
+let medKind = 'med';
+$('#med-kind').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ medKind = b.dataset.v; $$('#med-kind button').forEach(x => x.classList.toggle('on', x === b)); } });
+$('#med-add').addEventListener('click', () => {
+  const name = $('#med-name').value.trim(); if (!name) return;
+  settings.meds.push({name, dose:$('#med-dose').value.trim(), kind:medKind}); saveSettings();
+  $('#med-name').value = ''; $('#med-dose').value = ''; renderSettings(); toast('Added');
+});
+$('#med-list').addEventListener('click', e => { const b = e.target.closest('[data-mdel]'); if (b){ settings.meds.splice(Number(b.dataset.mdel), 1); saveSettings(); renderSettings(); } });
+$('#btn-backup').addEventListener('click', async () => {
+  const ok = await shareFile(`health-aware-backup-${keyOf(todayNum())}.json`, 'application/json', JSON.stringify({app:'health-aware', version:1, exported:new Date().toISOString(), settings, entries}, null, 1), 'Health Aware backup');
+  if (ok){ settings.lastBackup = new Date().toISOString(); saveSettings(); renderSettings(); }
+});
+$('#btn-restore').addEventListener('click', () => $('#restore-file').click());
+$('#restore-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.app !== 'health-aware' || !Array.isArray(data.entries)) throw new Error('This is not a Health Aware backup file.');
+    const replace = confirm(`Backup has ${data.entries.length} entries.\n\nOK = replace everything on this phone with the backup.\nCancel = merge (keep both, skip duplicates).`);
+    if (replace){ entries = data.entries; settings = Object.assign(settings, data.settings || {}); }
+    else { const ids = new Set(entries.map(x => x.id)); entries = entries.concat(data.entries.filter(x => !ids.has(x.id))); }
+    sortEntries(); saveEntries(); saveSettings(); renderSettings(); toast('Backup restored');
+  } catch (err) { alert('Could not restore: ' + err.message); }
+});
+$('#btn-wipe').addEventListener('click', () => {
+  if (!entries.length) return toast('Nothing to delete');
+  if (confirm(`Delete all ${entries.length} entries? Save a backup first if you may need them.`) && confirm('Are you sure? This cannot be undone.')){ entries = []; saveEntries(); renderSettings(); toast('All entries deleted'); }
+});
+$('#btn-sample').addEventListener('click', () => {
+  if (entries.some(e => !e.sample) && !confirm('Add sample entries alongside your real data? You can remove them later by deleting them.')) return;
+  if (entries.some(e => e.sample)){ if (confirm('Remove the sample entries?')){ entries = entries.filter(e => !e.sample); saveEntries(); renderSettings(); toast('Sample data removed'); } return; }
+  entries = entries.concat(sampleData()); sortEntries(); saveEntries(); renderSettings(); toast('Sample data added — tap again to remove');
+});
+function sampleData(){
+  const out = [], today = new Date(); let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const at = (daysAgo, h, m = 0) => { const d = new Date(today); d.setDate(d.getDate() - daysAgo); d.setHours(h, m, 0, 0); return toLocal(d); };
+  const add = (cat, ts, f, actions = []) => out.push({id:uid() + out.length, cat, ts, f, notes:'', actions:actions.map(a => ({id:uid(), ts, relief:'', dose:'', ...a})), sample:true});
+  for (let d = 59; d >= 0; d--){
+    const p = d / 59; // 1 = 2 months ago, 0 = today: things slowly improve
+    add('bp', at(d, 7, 30), {sys:Math.round(128 + 14 * p + rnd() * 8), dia:Math.round(80 + 8 * p + rnd() * 6), pulse:Math.round(66 + rnd() * 12), arm:'Left', position:'Sitting', timing:'Morning', context:['Before BP meds', 'Rested 5 min']});
+    if (d % 2 === 0) add('weight', at(d, 6, 45), {weight:r1(196 - 5 * (1 - p) + rnd() * 1.5), unit:'lb', timing:'Morning, before eating'});
+    if (rnd() < 0.2 + 0.25 * p) add('headache', at(d, 14 + Math.floor(rnd() * 6)), {severity:Math.min(10, Math.round(3 + 4 * p + rnd() * 3)), type:rnd() < 0.3 ? 'Migraine' : 'Tension', location:['Temples'], quality:['Pressing / tight'], triggers:[rnd() < 0.5 ? 'Stress' : 'Poor sleep'], duration:Math.round(2 + rnd() * 4)}, [{kind:'med', name:'Ibuprofen', dose:'400 mg', relief:rnd() < 0.6 ? 'good' : 'some'}]);
+    if (rnd() < 0.35) add('pain', at(d, 18), {area:[rnd() < 0.6 ? 'Lower back' : 'Right shoulder'], severity:Math.round(3 + 3 * p + rnd() * 2), quality:['Aching', 'Stiffness'], triggers:['Prolonged sitting'], impact:'Mild'}, [{kind:'action', name:'Heat pad', dose:'20 min', relief:'some'}]);
+    const bms = 1 + (rnd() < 0.3 ? 1 : 0);
+    for (let i = 0; i < bms; i++){ const bt = rnd() < 0.3 + 0.3 * p ? (rnd() < 0.5 ? 6 : 2) : (rnd() < 0.5 ? 3 : 4); add('bowel', at(d, 8 + i * 6), {event:'Bowel movement', bristol:bt, urgency:bt >= 6 ? 'Moderate' : 'None', pain:bt >= 6 || bt <= 2 ? Math.round(2 + 3 * p + rnd() * 2) : 0, symptoms:bt >= 6 ? ['Cramping', 'Bloating'] : []}); }
+  }
+  return out;
+}
+
+/* ---------- boot ---------- */
+sortEntries();
+render();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
