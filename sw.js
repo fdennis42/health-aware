@@ -1,5 +1,5 @@
 // Network-first with offline fallback, so updates arrive automatically and the app still opens offline.
-const CACHE = 'health-aware-v2';
+const CACHE = 'health-aware-v3';
 const ASSETS = ['./', './index.html', './config.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener('activate', e => {

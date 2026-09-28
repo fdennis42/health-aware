@@ -556,6 +556,7 @@ const CATS = {
   bowel: { label:'IBS / Bowel', emoji:'🌀', fields:[
     {k:'event', t:'choice', label:'Entry type', opts:['Bowel movement','Symptoms only']},
     {k:'bristol', t:'bristol', label:'Stool type (Bristol scale)'},
+    {k:'volume', t:'choice', label:'Volume', opts:['Small','Medium','Large']},
     {k:'urgency', t:'choice', label:'Urgency', opts:['None','Mild','Moderate','Severe / accident']},
     {k:'pain', t:'scale', label:'Abdominal pain / cramping'},
     {k:'symptoms', t:'multi', label:'Symptoms', opts:['Bloating','Cramping','Gas','Straining','Incomplete emptying','Mucus','Blood','Nausea','Heartburn']},
@@ -603,6 +604,7 @@ function summary(e){
     case 'bowel':
       if (f.event === 'Symptoms only') bits.push('Symptoms only');
       if (f.bristol) bits.push(`Bristol ${f.bristol} (${BRISTOL[f.bristol-1][2].toLowerCase()})`);
+      if (f.volume) bits.push(f.volume.toLowerCase() + ' volume');
       if (f.urgency && f.urgency !== 'None') bits.push('Urgency: ' + f.urgency.toLowerCase());
       if (f.pain != null) bits.push(`pain ${f.pain}/10`);
       if (arr(f.symptoms).length) bits.push(arr(f.symptoms).slice(0, 3).join(', '));
@@ -1063,6 +1065,7 @@ function analyze(cat, b){
       {l:'Urgency episodes', v:urg.length, d:`${u1} → ${u2} (1st vs 2nd half)`},
     ];
     if (br.length){ const lo = br.filter(v => v <= 2).length, hi = br.filter(v => v >= 5).length; R.facts.push(`Stool types: ${lo} hard (1–2), ${br.filter(normal).length} normal (3–4), ${hi} loose (5–7)`); }
+    { const v = topCounts(bm, 'volume'); if (v.length) R.facts.push(`Volume: ${topStr(v)}`); }
     R.facts.push(`Days with a bowel movement: ${bmDays} of ${days}`);
     [['symptoms', 'Symptoms'], ['triggers', 'Triggers']].forEach(([k, l]) => { const t = topCounts(list, k); if (t.length) R.facts.push(`${l}: ${topStr(t)}`); });
     if (list.some(e => arr(e.f.symptoms).includes('Blood'))) R.facts.push('⚠︎ Blood reported in at least one entry — mention to your provider.');
@@ -1222,10 +1225,10 @@ $('#btn-email').addEventListener('click', () => {
 });
 function csvCell(v){ v = String(v ?? ''); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; }
 function toCSV(list){
-  const head = ['date', 'time', 'category', 'severity_0_10', 'systolic', 'diastolic', 'pulse', 'bp_category', 'weight', 'weight_unit', 'bristol', 'urgency', 'abdominal_pain_0_10', 'duration_hours', 'details', 'notes', 'medications_actions'];
+  const head = ['date', 'time', 'category', 'severity_0_10', 'systolic', 'diastolic', 'pulse', 'bp_category', 'weight', 'weight_unit', 'bristol', 'volume', 'urgency', 'abdominal_pain_0_10', 'duration_hours', 'details', 'notes', 'medications_actions'];
   const rows = list.slice().reverse().map(e => {
     const f = e.f, c = bpCategory(f.sys, f.dia);
-    return [e.ts.slice(0, 10), e.ts.slice(11, 16), CATS[e.cat].label, f.severity, f.sys, f.dia, f.pulse, c && e.cat === 'bp' ? c.label : '', f.weight, f.weight != null ? (f.unit || settings.weightUnit) : '', f.bristol, f.urgency, f.pain, f.duration, detailText(e), e.notes, (e.actions || []).map(actionPlain).join(' | ')].map(csvCell).join(',');
+    return [e.ts.slice(0, 10), e.ts.slice(11, 16), CATS[e.cat].label, f.severity, f.sys, f.dia, f.pulse, c && e.cat === 'bp' ? c.label : '', f.weight, f.weight != null ? (f.unit || settings.weightUnit) : '', f.bristol, f.volume, f.urgency, f.pain, f.duration, detailText(e), e.notes, (e.actions || []).map(actionPlain).join(' | ')].map(csvCell).join(',');
   });
   return '﻿' + head.join(',') + '\n' + rows.join('\n');
 }
