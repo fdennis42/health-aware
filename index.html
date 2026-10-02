@@ -537,6 +537,7 @@ function renderSyncStatus(){
   if (!session) return;
   const [color, label] = sync.busy ? ['var(--accent)', 'Syncing…'] : sync.error ? ['var(--warn)', navigator.onLine === false ? 'Offline' : 'Not synced'] : sync.dirty ? ['var(--warn)', 'Pending'] : ['var(--good)', 'Synced'];
   const pill = $('#sync-pill'); if (pill) pill.innerHTML = `<span class="dot" style="background:${color}"></span>${label}`;
+  renderMovedStatus();
   const st = $('#sync-status');
   if (st) st.textContent = sync.error ? sync.error : sync.busy ? 'Syncing…' : sync.last ? `Last checked ${new Date(sync.last).toLocaleString()}` + (sync.cloudSaved ? ` · cloud copy saved ${new Date(sync.cloudSaved).toLocaleString()}` : '') + (sync.dirty ? ' · changes waiting' : '') : 'Not synced yet.';
 }
@@ -704,22 +705,31 @@ function entryCard(e){
       ${acts.length ? `<div class="a">${acts.map(a => esc(actionText(a))).join('<br>')}</div>` : ''}
     </div></button>`;
 }
+// Health Aware is retired: Life Aware is the only app going forward. This app now only makes sure
+// anything still on this device reaches the cloud, so Life Aware can copy it in.
+const LIFE_AWARE_URL = 'https://fdennis42.github.io/life-aware/';
+function movedCardHTML(){
+  return `<div class="tile wide" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:10px;min-height:0">
+    <div style="display:flex;gap:12px;align-items:center"><span class="em">➜</span><b style="font-size:18px">Health Aware has moved to Life Aware</b></div>
+    <div class="sub">Logging now happens in Life Aware. Your entries here are kept in your account, and Life Aware copies them in when you sign in with the same email.</div>
+    <div class="muted" id="moved-status"></div>
+    <a class="btn primary block" href="${LIFE_AWARE_URL}" style="text-align:center;text-decoration:none">Open Life Aware</a>
+    <div class="muted">Add Life Aware to your Home Screen (Share → Add to Home Screen), then you can remove this Health Aware icon once it says everything is saved.</div>
+  </div>`;
+}
+function renderMovedStatus(){
+  const el = $('#moved-status'); if (!el) return;
+  el.innerHTML = sync.busy ? 'Saving to your account…' : (sync.dirty || sync.error)
+    ? `<b style="color:var(--crit-ink)">Some entries on this device are not saved yet.</b> Keep Health Aware open while connected to the internet until this says they are saved.`
+    : '<b style="color:var(--good-ink)">✓ Everything from this device is saved in your account.</b>';
+}
 function renderLog(){
   $('#today-date').textContent = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'});
-  $('#tiles').innerHTML = CAT_KEYS.map((k, i) => {
-    const last = entries.find(e => e.cat === k);
-    return `<button class="tile${i === 4 ? ' wide' : ''}" data-new="${k}">
-      <span class="em">${CATS[k].emoji}</span>
-      <span><b>${esc(CATS[k].label)}</b><br><span class="muted">${last ? 'Last: ' + esc(ago(last.ts)) : 'Tap to log'}</span></span>
-    </button>`;
-  }).join('');
+  $('#tiles').innerHTML = movedCardHTML(); renderMovedStatus();
   const t = keyOf(todayNum());
   const todays = entries.filter(e => e.ts.startsWith(t));
-  $('#today-list').innerHTML = todays.length ? todays.map(entryCard).join('') : '<div class="empty">Nothing logged today yet.<br>Tap a category above to add an entry.</div>';
-  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
-  const tip = $('#install-tip');
-  tip.classList.toggle('hidden', standalone);
-  if (!standalone) tip.innerHTML = installGuideHTML(false);
+  $('#today-list').innerHTML = todays.length ? todays.map(entryCard).join('') : '<div class="empty">Nothing logged here today. New entries go in Life Aware.</div>';
+  $('#install-tip').classList.add('hidden');
 }
 function installGuideHTML(compact){
   const here = location.protocol.startsWith('http') && !/^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname) ? location.origin + location.pathname : '';
@@ -821,6 +831,9 @@ $('#hist-filter').addEventListener('click', e => { const b = e.target.closest('[
 /* ---------- entry sheet ---------- */
 let draft = null, draftIsNew = false;
 function openEntry(cat, id){
+  // Read-only: adding or editing here would create entries Life Aware might not pick up.
+  if (!confirm('Health Aware has moved to Life Aware. Add and edit entries there.\n\nOpen Life Aware now?')) return;
+  location.href = LIFE_AWARE_URL; return;
   if (id){ draft = JSON.parse(JSON.stringify(entries.find(e => e.id === id))); draftIsNew = false; }
   else { draft = {id:uid(), cat, ts:nowLocal(), f:{}, notes:'', actions:[]}; draftIsNew = true; if (cat === 'bowel') draft.f.event = 'Bowel movement'; }
   draft.actions = draft.actions || [];
@@ -1375,7 +1388,7 @@ function showAuth(mode, msg, ok){
       <label for="a-pw">Password</label><input type="password" id="a-pw" autocomplete="current-password" required>
       <button class="btn primary block" style="margin-top:16px">Sign in</button>${note}
       <div class="alt"><button type="button" class="linkbtn" data-auth="forgot" style="font-size:15px">Forgot password?</button></div>
-    </form><div class="muted">Accounts are by invitation only. Ask the account owner for an invite.</div>`;
+    </form><div class="card" style="text-align:left"><b>Health Aware has moved to Life Aware.</b><div class="sub" style="margin:4px 0 10px">Sign in here only if this device may still hold entries that are not saved yet. Otherwise open Life Aware.</div><a class="btn primary block" href="${LIFE_AWARE_URL}" style="display:block;text-align:center;text-decoration:none">Open Life Aware</a></div>`;
   } else if (mode === 'forgot'){
     sub.textContent = 'Reset your password';
     body.innerHTML = `<form class="card" id="f-forgot">
