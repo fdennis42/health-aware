@@ -381,17 +381,18 @@ const LEGACY_E = 'ha.entries.v1', LEGACY_S = 'ha.settings.v1';
 const DEFAULT_SETTINGS = {name:'', dob:'', provider:'', providerEmail:'', weightUnit:'lb', weightGoal:'maintain', meds:[], lastBackup:null};
 let session = load('ha.session', null);
 let entries = [], settings = {...DEFAULT_SETTINGS}, deleted = {}, knownIds = new Set();
-const sync = {dirty:false, last:null, busy:false, again:false, error:''};
+const sync = {dirty:false, last:null, busy:false, again:false, error:'', rev:0, ver:0, cloudSaved:null, snapDay:null};
 const userKey = () => 'ha.u.' + session.user.id;
 const sortEntries = () => entries.sort((a, b) => b.ts.localeCompare(a.ts));
 function loadUserData(){
   const d = load(userKey(), null) || {};
   entries = d.entries || []; settings = Object.assign({...DEFAULT_SETTINGS}, d.settings || {}); deleted = d.deleted || {};
   sync.dirty = !!d.dirty; sync.last = d.lastSync || null; sync.error = '';
+  sync.rev = d.rev || 0; sync.cloudSaved = d.cloudSaved || null; sync.snapDay = d.snapDay || null;
   knownIds = new Set(entries.map(e => e.id)); sortEntries();
 }
 function persist(){
-  try { localStorage.setItem(userKey(), JSON.stringify({entries, settings, deleted, dirty:sync.dirty, lastSync:sync.last})); }
+  try { localStorage.setItem(userKey(), JSON.stringify({entries, settings, deleted, dirty:sync.dirty, lastSync:sync.last, rev:sync.rev, cloudSaved:sync.cloudSaved, snapDay:sync.snapDay})); }
   catch (e) { alert('Could not save data on this device: ' + e.message); }
 }
 function saveEntries(){
@@ -402,7 +403,7 @@ function saveEntries(){
   knownIds = ids; changed();
 }
 function saveSettings(){ settings._updated = new Date().toISOString(); changed(); }
-function changed(){ sync.dirty = true; persist(); scheduleSync(); }
+function changed(){ sync.ver++; sync.dirty = true; persist(); scheduleSync(); }
 
 /* ---------- auth (Supabase Auth REST API) ---------- */
 const api = p => String(CFG.supabaseUrl || '').replace(/\/$/, '') + p;
@@ -444,18 +445,20 @@ async function handleAuthRedirect(){
 }
 
 /* ---------- cloud sync ---------- */
-const objPath = () => `${CFG.bucket || 'health-data'}/${session.user.id}/data.json`;
-async function download(){
+const objPath = (name = 'data.json') => `${CFG.bucket || 'health-data'}/${session.user.id}/${name}`;
+async function download(name){
   const t = await freshToken();
-  const r = await fetch(api('/storage/v1/object/authenticated/' + objPath()), {headers:{apikey:CFG.supabaseAnonKey, Authorization:'Bearer ' + t}, cache:'no-store'});
+  // A unique query string makes sure no CDN or browser cache hands back an older copy of the file.
+  const bust = 't=' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const r = await fetch(api('/storage/v1/object/authenticated/' + objPath(name) + '?' + bust), {headers:{apikey:CFG.supabaseAnonKey, Authorization:'Bearer ' + t}, cache:'no-store'});
   if (r.ok) return r.json();
   const txt = await r.text();
   if (r.status === 404 || /not.?found/i.test(txt)) return null; // first sync for this user
   throw new Error('Could not download your data (' + r.status + ')');
 }
-async function upload(doc){
+async function upload(doc, name){
   const t = await freshToken();
-  const r = await fetch(api('/storage/v1/object/' + objPath()), {method:'POST', headers:{apikey:CFG.supabaseAnonKey, Authorization:'Bearer ' + t, 'Content-Type':'application/json', 'x-upsert':'true'}, body:JSON.stringify(doc)});
+  const r = await fetch(api('/storage/v1/object/' + objPath(name)), {method:'POST', headers:{apikey:CFG.supabaseAnonKey, Authorization:'Bearer ' + t, 'Content-Type':'application/json', 'x-upsert':'true', 'cache-control':'max-age=0'}, body:JSON.stringify(doc)});
   if (!r.ok) throw new Error('Could not upload your data (' + r.status + ')');
 }
 function mergeRemote(r){
@@ -469,27 +472,65 @@ function mergeRemote(r){
   if (r.settings && (r.settings._updated || '') > (settings._updated || '')) settings = Object.assign({...DEFAULT_SETTINGS}, r.settings);
 }
 let syncTimer;
+const DEVICE_ID = (() => { try { let d = localStorage.getItem('ha.device'); if (!d){ d = uid(); localStorage.setItem('ha.device', d); } return d; } catch { return uid(); } })();
+const snapshot = () => ({entries, settings, deleted});
+const sigOf = d => JSON.stringify([d.entries || [], d.settings || {}, d.deleted || {}]);
+const pause = ms => new Promise(r => setTimeout(r, ms));
 function scheduleSync(delay = 1200){ clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, delay); }
+async function cloudCopy(){
+  // Read the cloud file. If it is older than a version this device has already seen,
+  // the read was stale: wait and re-read rather than build on it (which would drop entries).
+  for (let i = 0; i < 4; i++){
+    const r = await download();
+    if (!r){
+      if (sync.rev > 0) throw new Error('Your cloud copy could not be read, so nothing was overwritten. Will retry.');
+      return null;
+    }
+    if (typeof r.rev !== 'number' || r.rev >= sync.rev) return r;
+    await pause(1000 * (i + 1));
+  }
+  throw new Error('The server returned an older copy of your data, so nothing was overwritten. Will retry.');
+}
+async function dailyBackup(remote){
+  // Once a day, keep a dated copy of the cloud file before changing it (<user id>/backups/YYYY-MM-DD.json).
+  const day = keyOf(todayNum());
+  if (!remote || sync.snapDay === day) return;
+  try { await upload(remote, `backups/${day}.json`); sync.snapDay = day; } catch {}
+}
 async function syncNow(){
   if (!session) return;
   if (sync.busy){ sync.again = true; return; }
   sync.busy = true; renderSyncStatus();
-  const uid = session.user.id;
+  const userId = session.user.id, startVer = sync.ver, before = sigOf(snapshot());
   try {
-    const remote = await download();
-    if (!session || session.user.id !== uid) return;
-    const sig = d => JSON.stringify([d.entries || [], d.settings || {}, d.deleted || {}]);
-    const before = sig({entries, settings, deleted});
-    if (remote) mergeRemote(remote);
-    const mine = {entries, settings, deleted};
-    if (!remote || sig(remote) !== sig(mine)) await upload({app:'health-aware', version:2, email:session.user.email, updated:new Date().toISOString(), ...mine});
-    sync.dirty = false; sync.last = new Date().toISOString(); sync.error = ''; persist();
-    if (sig(mine) !== before && $('#sheet').classList.contains('hidden')) render();
+    for (let attempt = 0; ; attempt++){
+      const remote = await cloudCopy();
+      if (!session || session.user.id !== userId) return;
+      await dailyBackup(remote);
+      if (remote) mergeRemote(remote);
+      const mine = snapshot();
+      if (remote && sigOf(remote) === sigOf(mine)){
+        sync.rev = Math.max(sync.rev, remote.rev || 0); sync.cloudSaved = remote.updated || sync.cloudSaved;
+        break;
+      }
+      const rev = Math.max(sync.rev, remote && typeof remote.rev === 'number' ? remote.rev : 0) + 1;
+      const doc = {app:'health-aware', version:2, rev, writer:DEVICE_ID, email:session.user.email, updated:new Date().toISOString(), ...mine};
+      await upload(doc);
+      sync.rev = rev; sync.cloudSaved = doc.updated;
+      // Read it back: if another device saved at the same moment, loop to merge both so neither is lost.
+      const check = await download();
+      if (!check || (check.rev === rev && check.writer === DEVICE_ID)) break;
+      if (attempt >= 3) throw new Error('Another device was saving at the same time. Will retry.');
+    }
+    // Only clear "pending" if nothing new was entered while this sync was running.
+    sync.dirty = sync.ver !== startVer; sync.last = new Date().toISOString(); sync.error = ''; persist();
+    if (sigOf(snapshot()) !== before && $('#sheet').classList.contains('hidden')) render();
   } catch (e) {
     sync.error = navigator.onLine === false ? 'Offline — changes will sync when you are back online.' : e.message;
+    persist();
   } finally {
     sync.busy = false; renderSyncStatus();
-    if (sync.again){ sync.again = false; scheduleSync(300); }
+    if (sync.again || (sync.dirty && !sync.error)){ sync.again = false; scheduleSync(300); }
   }
 }
 function renderSyncStatus(){
@@ -497,10 +538,18 @@ function renderSyncStatus(){
   const [color, label] = sync.busy ? ['var(--accent)', 'Syncing…'] : sync.error ? ['var(--warn)', navigator.onLine === false ? 'Offline' : 'Not synced'] : sync.dirty ? ['var(--warn)', 'Pending'] : ['var(--good)', 'Synced'];
   const pill = $('#sync-pill'); if (pill) pill.innerHTML = `<span class="dot" style="background:${color}"></span>${label}`;
   const st = $('#sync-status');
-  if (st) st.textContent = sync.error ? sync.error : sync.busy ? 'Syncing…' : sync.last ? `Last synced ${new Date(sync.last).toLocaleString()}` + (sync.dirty ? ' · changes waiting' : '') : 'Not synced yet.';
+  if (st) st.textContent = sync.error ? sync.error : sync.busy ? 'Syncing…' : sync.last ? `Last checked ${new Date(sync.last).toLocaleString()}` + (sync.cloudSaved ? ` · cloud copy saved ${new Date(sync.cloudSaved).toLocaleString()}` : '') + (sync.dirty ? ' · changes waiting' : '') : 'Not synced yet.';
 }
 window.addEventListener('online', () => session && syncNow());
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && session) syncNow(); });
+document.addEventListener('visibilitychange', () => {
+  if (!session) return;
+  // Sync when the app comes back, and push pending changes right away when it is put in the background.
+  if (document.visibilityState === 'visible' || sync.dirty){ clearTimeout(syncTimer); syncNow(); }
+});
+window.addEventListener('storage', e => {
+  // Another tab of this app saved: pick up its copy instead of overwriting it.
+  if (session && e.key === userKey() && e.newValue && $('#sheet').classList.contains('hidden')){ loadUserData(); render(); }
+});
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
 
 /* ---------- categories ---------- */
